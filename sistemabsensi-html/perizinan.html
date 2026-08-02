@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Perizinan - Sistem Absensi UKM Taekwondo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts: Poppins (Heading) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config for Soft UI Theme & Dark Mode -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: "#3554d1",
+                            hover: "#2841a8",
+                            light: "#eef2ff",
+                        },
+                        status: {
+                            hadir: { bg: "#edfcf4", text: "#16a34a" },
+                            izin: { bg: "#eff6ff", text: "#3b82f6" },
+                            sakit: { bg: "#fefce8", text: "#eab308" },
+                            alfa: { bg: "#fef2f2", text: "#ef4444" },
+                            pending: { bg: "#fff7ed", text: "#d97706" }
+                        },
+                        dark: {
+                            bg: "#111827",
+                            card: "#1f2937",
+                            border: "#374151",
+                            text: "#f3f4f6",
+                            muted: "#9ca3af"
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
+                        'card': '0 4px 20px -4px rgba(0,0,0,0.03)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base styles with transition for dark mode */
+        body { 
+            background-color: #F4F7FE; 
+            transition: background-color 0.3s, color 0.3s;
+        } 
+        .dark body { 
+            background-color: #111827; 
+        }
+
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .sidebar-menu { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .sidebar-menu.open { transform: translateX(0); }
+        }
+
+        /* Toast notification */
+        #toast {
+            visibility: hidden;
+            position: fixed;
+            z-index: 1000;
+            right: 24px;
+            top: 24px;
+            transform: translateX(50px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="text-gray-800 dark:text-dark-text flex min-h-screen font-sans">
+
+    <div class="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-dark-card border-b border-gray-100 dark:border-dark-border z-40 px-5 py-3 flex items-center justify-between shadow-sm transition-colors duration-300">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-brand-blue text-white rounded-xl flex items-center justify-center font-heading font-bold text-sm shadow-md">UT</div>
+            <div>
+                <h1 class="font-heading font-bold text-gray-900 dark:text-white text-sm leading-tight">Perizinan</h1>
+                <p class="text-[10px] text-gray-500 dark:text-dark-muted font-medium">UKM Taekwondo</p>
+            </div>
+        </div>
+        <button onclick="toggleMenu()" class="text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-brand-light transition-colors focus:outline-none p-1">
+            <span class="material-symbols-outlined text-[28px]">menu</span>
+        </button>
+    </div>
+
+    <!-- Mobile Overlay Background -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm z-30 hidden transition-opacity md:hidden" onclick="toggleMenu()"></div>
+
+    <aside id="sidebar" class="sidebar-menu fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-dark-card flex-col p-6 z-50 shadow-[1px_0_15px_rgba(0,0,0,0.03)] dark:shadow-dark-card border-r border-gray-100 dark:border-dark-border md:translate-x-0 md:flex hidden transition-colors duration-300">
+        <!-- Brand Header -->
+        <div class="flex items-center justify-between mb-10 pl-2">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-brand-blue text-white rounded-2xl flex items-center justify-center font-heading font-bold text-xl shadow-lg shadow-brand-blue/30">
+                    UT
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-gray-900 dark:text-white text-lg leading-tight">UKM Taekwondo</h1>
+                    <p class="text-xs text-gray-400 dark:text-dark-muted font-medium mt-0.5">Admin Dashboard</p>
+                </div>
+            </div>
+            <button onclick="toggleMenu()" class="md:hidden text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 space-y-2 overflow-y-auto">
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="dashboard.html">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="proses_absensi.html">
+                <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                <span class="text-sm">Absen</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="database_anggota.html">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+                <span class="text-sm">Data Anggota</span>
+            </a>
+            <!-- Active Menu: Perizinan -->
+            <a class="flex items-center gap-3 px-4 py-3.5 bg-brand-blue text-white rounded-2xl font-semibold shadow-md shadow-brand-blue/20 transition-transform hover:scale-[1.02]" href="perizinan.html">
+                <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                <span class="text-sm">Perizinan</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="manajemen_petugas.html">
+                <span class="material-symbols-outlined text-[20px]">badge</span>
+                <span class="text-sm">Petugas Absensi</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="jadwal_latihan.html">
+                <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+                <span class="text-sm">Jadwal</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="manajemen_hari_libur.html">
+                <span class="material-symbols-outlined text-[20px]">event_busy</span>
+                <span class="text-sm">Hari Libur</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="rekap_kehadiran.html">
+                <span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+                <span class="text-sm">Rekap Kehadiran</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="settings.html">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm">Settings</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-dark-border space-y-2">
+            <button id="theme-toggle" class="w-full flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-dark-muted hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-gray-800 transition-colors rounded-2xl font-medium">
+                <span class="material-symbols-outlined text-[20px]" id="theme-icon">dark_mode</span>
+                <span class="text-sm" id="theme-text">Dark Mode</span>
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-3.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-2xl font-medium">
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+                <span class="text-sm">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="w-full md:ml-[280px] pt-20 md:pt-8 min-h-screen pb-12 transition-all duration-300">
+        <div class="p-5 md:p-6 max-w-[1280px] mx-auto space-y-6 md:space-y-8">
+            
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 sm:gap-4 mb-2">
+                <div>
+                    <h1 class="font-heading font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight">Manajemen Perizinan</h1>
+                    <p class="text-sm text-gray-500 dark:text-dark-muted mt-2 font-medium">Validasi surat sakit dan persetujuan izin anggota</p>
+                </div>
+            </div>
+
+            <!-- Info Banner -->
+            <div class="bg-blue-50/80 dark:bg-brand-blue/10 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row gap-4 items-start border border-blue-100 dark:border-brand-blue/20 shadow-sm relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-200/40 dark:bg-brand-blue/20 rounded-full blur-2xl"></div>
+                <div class="w-10 h-10 rounded-full bg-white dark:bg-brand-blue/20 flex items-center justify-center text-brand-blue dark:text-brand-light shrink-0 shadow-sm z-10">
+                    <span class="material-symbols-outlined text-[22px]">auto_awesome</span>
+                </div>
+                <div class="z-10">
+                    <h4 class="text-brand-blue dark:text-brand-light font-bold text-sm">Otomatisasi Sistem Presensi</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed font-medium">
+                        Pengajuan yang <span class="font-bold text-gray-900 dark:text-white">disetujui</span> akan secara otomatis mengubah status absensi anggota menjadi Izin/Sakit pada tanggal jadwal terkait. 
+                        <br class="hidden sm:block"/>Batas maksimal pengajuan oleh anggota adalah <span class="font-bold text-gray-900 dark:text-white">2 jam sebelum jam absen dimulai</span>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-dark-card rounded-3xl border border-gray-50 dark:border-dark-border p-5 md:p-6 shadow-card dark:shadow-dark-card flex flex-col md:flex-row gap-4 items-center z-10 relative transition-colors duration-300">
+                <!-- Search -->
+                <div class="relative w-full flex-1">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    <input id="searchInput" onkeyup="filterTable()" class="w-full pl-12 pr-4 py-3 md:py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl md:rounded-xl font-medium text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 transition-all" placeholder="Cari nama anggota..." type="text">
+                </div>
+                
+                <!-- Filters -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <select id="statusFilter" onchange="filterTable()" class="px-4 py-3 md:py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl md:rounded-xl font-medium text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 transition-all min-w-[150px] appearance-none cursor-pointer">
+                        <option value="">Semua Status</option>
+                        <option value="pending">Menunggu</option>
+                        <option value="approved">Disetujui</option>
+                        <option value="rejected">Ditolak</option>
+                    </select>
+                    <div class="relative w-full sm:w-auto">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">calendar_today</span>
+                        <input id="dateFilter" onchange="filterTable()" class="w-full sm:w-auto pl-10 pr-4 py-3 md:py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl md:rounded-xl font-medium text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 transition-all text-gray-500" type="date">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-dark-card rounded-3xl border border-gray-50 dark:border-dark-border shadow-card dark:shadow-dark-card flex flex-col overflow-hidden transition-colors duration-300">
+                <div class="w-full overflow-x-hidden md:overflow-x-auto">
+                    <table class="w-full text-left border-collapse table-fixed md:table-auto">
+                        <thead>
+                            <tr class="bg-gray-50/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-dark-border">
+                                <th class="w-[28%] md:w-auto py-2 px-1 md:py-4 md:px-6 font-bold text-[7px] md:text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Profil Anggota</th>
+                                <th class="w-[22%] md:w-auto py-2 px-1 md:py-4 md:px-6 font-bold text-[7px] md:text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Detail Pengajuan</th>
+                                <th class="w-[20%] md:w-auto py-2 px-1 md:py-4 md:px-6 font-bold text-[7px] md:text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Keterangan / Bukti</th>
+                                <th class="w-[18%] md:w-auto py-2 px-1 md:py-4 md:px-6 font-bold text-[7px] md:text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="w-[12%] md:w-auto py-2 px-1 md:py-4 md:px-6 font-bold text-[7px] md:text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-50 dark:divide-dark-border">
+                            <!-- JS Dynamic Rendering -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden py-12 flex flex-col items-center justify-center text-center">
+                    <span class="material-symbols-outlined text-[64px] text-gray-300 dark:text-gray-600 mb-4">event_busy</span>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Data tidak ditemukan</h3>
+                    <p class="text-sm text-gray-500 dark:text-dark-muted mt-1">Coba sesuaikan filter pencarian Anda.</p>
+                </div>
+
+                <!-- Pagination -->
+                <div class="p-5 border-t border-gray-100 dark:border-dark-border flex flex-col sm:flex-row items-center justify-between text-sm text-gray-500 dark:text-dark-muted bg-white dark:bg-dark-card gap-4">
+                    <span id="paginationInfo" class="font-medium text-xs md:text-sm">Menampilkan 0 pengajuan</span>
+                    <div id="paginationControls" class="flex gap-1.5">
+                        <!-- Controls generated by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="toast" class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] dark:shadow-black/50 border border-gray-100 dark:border-gray-700 min-w-[300px]">
+        <div id="toastIconContainer" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-green-100 text-green-600">
+            <span id="toastIcon" class="material-symbols-outlined text-[20px]">check_circle</span>
+        </div>
+        <div class="flex-1">
+            <h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white leading-tight">Berhasil</h4>
+            <p id="toastMessage" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pesan notifikasi.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentPage = 1;
+        const itemsPerPage = 3;
+        
+        // Data Dummy (Representasi Backend)
+        let permissionsData = [
+            { id: 1, name: "Dinda Rahmawati", nim: "240012345", type: "sakit", date: "2026-07-30", time: "16:00", document: "Surat_Dokter.pdf", docType: "pdf", status: "pending", timeSubmitted: "08:30 WIB", initials: "DR", color: "bg-blue-100 dark:bg-blue-900/30 text-brand-blue dark:text-blue-400" },
+            { id: 2, name: "Rio Pratama", nim: "230009876", type: "izin", date: "2026-07-30", time: "16:00", document: "Ada keperluan mendesak keluarga di kampung halaman.", docType: "text", status: "pending", timeSubmitted: "10:15 WIB", initials: "RP", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" },
+            { id: 3, name: "Siti Aminah", nim: "220011122", type: "sakit", date: "2026-07-28", time: "16:00", document: "Resep_Obat.jpg", docType: "image", status: "approved", timeSubmitted: "07:00 WIB", initials: "SA", color: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400" },
+            { id: 4, name: "Budi Santoso", nim: "2300021111", type: "izin", date: "2026-08-01", time: "16:00", document: "Acara keluarga", docType: "text", status: "pending", timeSubmitted: "09:00 WIB", initials: "BS", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" },
+            { id: 5, name: "Lestari", nim: "2300018249", type: "sakit", date: "2026-08-01", time: "16:00", document: "Surat_Izin.pdf", docType: "pdf", status: "rejected", timeSubmitted: "11:20 WIB", initials: "L", color: "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400" }
+        ];
+
+        // --- Theme Toggling (Dark Mode) ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            updateThemeUI(true);
+        } else {
+            html.classList.remove('dark');
+            updateThemeUI(false);
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+            updateThemeUI(isDark);
+        });
+
+        function updateThemeUI(isDark) {
+            document.getElementById('theme-icon').textContent = isDark ? 'light_mode' : 'dark_mode';
+            document.getElementById('theme-text').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        }
+
+        // --- Core Functions ---
+        
+        // Format Tanggal (e.g., 2026-07-30 -> Kamis, 30 Jul 2026)
+        function formatDate(dateStr) {
+            if(!dateStr) return "-";
+            const date = new Date(dateStr);
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        // Tampilkan Notifikasi
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById("toast");
+            const iconContainer = document.getElementById("toastIconContainer");
+            const icon = document.getElementById("toastIcon");
+            
+            document.getElementById("toastTitle").innerText = title;
+            document.getElementById("toastMessage").innerText = message;
+            
+            iconContainer.className = "w-10 h-10 rounded-xl flex items-center justify-center shrink-0";
+            
+            if (type === 'success') {
+                iconContainer.classList.add('bg-green-100', 'dark:bg-green-900/30', 'text-green-600', 'dark:text-green-400');
+                icon.innerText = "check_circle";
+            } else if (type === 'error') {
+                iconContainer.classList.add('bg-red-100', 'dark:bg-red-900/30', 'text-red-600', 'dark:text-red-400');
+                icon.innerText = "cancel";
+            }
+            
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 3500);
+        }
+
+        // Aksi Terima / Tolak
+        function setStatus(id, newStatus) {
+            const index = permissionsData.findIndex(p => p.id === id);
+            if (index !== -1) {
+                permissionsData[index].status = newStatus;
+                
+                if (newStatus === 'approved') {
+                    showToast("Disetujui", "Pengajuan izin berhasil disetujui.", "success");
+                } else {
+                    showToast("Ditolak", "Pengajuan izin telah ditolak.", "error");
+                }
+                
+                renderTable(); // Re-render dengan data terbaru
+            }
+        }
+
+        // Toggle untuk Mobile Detail
+        window.toggleDetail = function(id) {
+            const detailRow = document.getElementById(id);
+            if (detailRow.classList.contains('hidden')) {
+                const allDetails = document.querySelectorAll('tr[id^="detail-"]');
+                allDetails.forEach(row => {
+                    if (!row.classList.contains('hidden')) row.classList.add('hidden');
+                });
+                detailRow.classList.remove('hidden');
+            } else {
+                detailRow.classList.add('hidden');
+            }
+        };
+
+        // Sidebar Toggle untuk Mobile
+        window.toggleMenu = function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden'); 
+                setTimeout(() => {
+                    sidebar.classList.add('open');
+                    overlay.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; 
+                }, 10);
+            } else if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+                setTimeout(() => sidebar.classList.add('hidden'), 300); 
+            }
+        };
+
+        // --- Render Table & Pagination ---
+        function renderTable(resetPage = false) {
+            if (resetPage) currentPage = 1;
+            
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            // Ambil Nilai Filter
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+
+            // Proses Filter
+            const filteredData = permissionsData.filter(item => {
+                const matchSearch = item.name.toLowerCase().includes(search) || item.nim.includes(search);
+                const matchStatus = statusFilter === "" || item.status === statusFilter;
+                const matchDate = dateFilter === "" || item.date === dateFilter;
+                return matchSearch && matchStatus && matchDate;
+            });
+
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+
+            if (totalItems === 0) {
+                tbody.parentElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                document.getElementById('paginationInfo').innerText = 'Menampilkan 0 pengajuan';
+                renderPagination(0);
+                return;
+            }
+
+            tbody.parentElement.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            // Pagination Slice
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+
+            document.getElementById('paginationInfo').innerText = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalItems} pengajuan`;
+            renderPagination(totalPages);
+
+            paginatedData.forEach(item => {
+                // Konfigurasi Tipe (Sakit/Izin)
+                let typeClass = item.type === 'sakit' ? 'bg-status-sakit-bg text-status-sakit-text dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-status-izin-bg text-status-izin-text dark:bg-blue-900/30 dark:text-blue-400';
+                let typeName = item.type.toUpperCase();
+
+                // Konfigurasi Status
+                let statusHTML = '';
+                let actionHTML = '';
+                
+                if (item.status === 'pending') {
+                    statusHTML = `
+                        <span class="inline-flex items-center w-fit px-1.5 py-0.5 md:px-3 md:py-1 rounded-sm md:rounded-full text-[6px] md:text-[11px] font-bold bg-status-pending-bg text-status-pending-text dark:bg-orange-900/30 dark:text-orange-400 tracking-wide">
+                            <span class="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-status-pending-text dark:bg-orange-400 mr-0.5 md:mr-1.5 animate-pulse"></span>
+                            Menunggu
+                        </span>
+                        <span class="text-[6px] md:text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-0.5 md:mt-1">Diajukan:<br class="md:hidden"> ${item.timeSubmitted}</span>
+                    `;
+                    actionHTML = `
+                        <button onclick="setStatus(${item.id}, 'approved')" class="w-4 h-4 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-green-600 dark:text-green-400 rounded-sm md:rounded-xl hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors shrink-0" title="Setujui (Approve)">
+                            <span class="material-symbols-outlined text-[10px] md:text-[20px]">check</span>
+                        </button>
+                        <button onclick="setStatus(${item.id}, 'rejected')" class="w-4 h-4 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-red-400 dark:text-red-400 rounded-sm md:rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors shrink-0" title="Tolak (Reject)">
+                            <span class="material-symbols-outlined text-[10px] md:text-[20px]">close</span>
+                        </button>
+                    `;
+                } else if (item.status === 'approved') {
+                    typeClass += ' opacity-70'; // Dimmer if already done
+                    statusHTML = `
+                        <span class="inline-flex items-center w-fit px-1.5 py-0.5 md:px-3 md:py-1 rounded-sm md:rounded-full text-[6px] md:text-[11px] font-bold bg-status-hadir-bg text-status-hadir-text dark:bg-green-900/30 dark:text-green-400 tracking-wide">Disetujui</span>
+                        <span class="text-[6px] md:text-[10px] text-green-600 dark:text-green-500 font-medium flex items-center gap-0.5 mt-0.5 md:mt-1">
+                            <span class="material-symbols-outlined text-[8px] md:text-[12px]">sync</span> Diupdate
+                        </span>
+                    `;
+                    actionHTML = `
+                        <span class="text-[6px] md:text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center justify-center gap-0.5 md:gap-1 bg-gray-50/80 dark:bg-gray-800 px-1 py-1 md:px-3 md:py-2 rounded-md md:rounded-lg border border-gray-100 dark:border-gray-700">
+                            <span class="material-symbols-outlined text-[8px] md:text-[16px]">verified</span> Done
+                        </span>
+                    `;
+                } else if (item.status === 'rejected') {
+                    typeClass += ' opacity-70';
+                    statusHTML = `
+                        <span class="inline-flex items-center w-fit px-1.5 py-0.5 md:px-3 md:py-1 rounded-sm md:rounded-full text-[6px] md:text-[11px] font-bold bg-status-alfa-bg text-status-alfa-text dark:bg-red-900/30 dark:text-red-400 tracking-wide">Ditolak</span>
+                    `;
+                    actionHTML = `
+                        <span class="text-[6px] md:text-xs font-bold text-red-500 flex items-center justify-center gap-0.5 md:gap-1 bg-red-50 dark:bg-red-900/20 px-1 py-1 md:px-3 md:py-2 rounded-md md:rounded-lg border border-red-100 dark:border-red-900/50">
+                            <span class="material-symbols-outlined text-[8px] md:text-[16px]">cancel</span> Rejected
+                        </span>
+                    `;
+                }
+
+                // Konfigurasi Dokumen
+                let docHTML = '';
+                if (item.docType === 'text') {
+                    docHTML = `<p class="text-[6px] md:text-xs text-gray-600 dark:text-gray-400 font-medium max-w-[50px] md:max-w-[200px] line-clamp-2 md:line-clamp-none break-words" title="${item.document}">"${item.document}"</p>`;
+                } else {
+                    const iconColor = item.docType === 'pdf' ? 'text-red-500' : 'text-blue-500';
+                    const iconType = item.docType === 'pdf' ? 'picture_as_pdf' : 'image';
+                    docHTML = `
+                        <button class="flex items-center gap-0.5 md:gap-2 px-1 md:px-3 py-1 md:py-1.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md md:rounded-lg transition-colors group/btn max-w-[50px] md:max-w-none">
+                            <span class="material-symbols-outlined text-[8px] md:text-[18px] ${iconColor}">${iconType}</span>
+                            <span class="text-[6px] md:text-xs font-semibold text-gray-600 dark:text-gray-300 group-hover/btn:text-brand-blue dark:group-hover/btn:text-white truncate w-full text-left">${item.document}</span>
+                        </button>
+                    `;
+                }
+
+                // Render Baris Utama
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-brand-light/40 dark:hover:bg-gray-800/50 transition-colors group align-top md:align-middle';
+                tr.innerHTML = `
+                    <td class="py-2 px-1 md:py-4 md:px-6 align-top md:align-middle">
+                        <div class="flex items-start md:items-center gap-1 md:gap-3">
+                            <div class="hidden md:flex w-10 h-10 rounded-full ${item.color} items-center justify-center font-heading font-bold text-sm shrink-0">${item.initials}</div>
+                            <div class="flex flex-col w-full break-words">
+                                <span class="font-bold text-gray-900 dark:text-white text-[7px] md:text-sm leading-tight break-words whitespace-normal">${item.name}</span>
+                                <span class="text-[6px] md:text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5 break-words whitespace-normal">NIM: <br class="md:hidden">${item.nim}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-2 px-1 md:py-4 md:px-6 align-top md:align-middle">
+                        <div class="flex flex-col gap-0.5 md:gap-1.5 items-start">
+                            <span class="px-1.5 py-0.5 md:px-2.5 md:py-1 ${typeClass} rounded-sm md:rounded-md text-[6px] md:text-[10px] font-bold tracking-wide uppercase">${typeName}</span>
+                            <div class="flex flex-col mt-0.5">
+                                <span class="text-[6px] md:text-xs font-bold text-gray-700 dark:text-gray-300 hidden md:block">Untuk Jadwal:</span>
+                                <span class="text-[6px] md:text-xs font-medium text-gray-500 dark:text-gray-400 leading-tight">${formatDate(item.date)} <br class="md:hidden">(${item.time})</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-2 px-1 md:py-4 md:px-6 align-top md:align-middle">
+                        ${docHTML}
+                    </td>
+                    <td class="py-2 px-1 md:py-4 md:px-6 align-top md:align-middle">
+                        <div class="flex flex-col gap-0.5 md:gap-1">
+                            ${statusHTML}
+                        </div>
+                    </td>
+                    <td class="py-2 px-1 md:py-4 md:px-6 text-right align-top md:align-middle">
+                        <div class="flex flex-col md:flex-row items-end md:items-center justify-end gap-1 md:gap-2">
+                            ${actionHTML}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('paginationControls');
+            container.innerHTML = '';
+
+            // Prev Button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `px-3.5 py-2 md:px-3 md:py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg font-medium transition-colors ${currentPage === 1 ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`;
+            prevBtn.innerText = 'Prev';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(false); } };
+            container.appendChild(prevBtn);
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                if (i === currentPage) {
+                    pageBtn.className = 'w-10 md:w-8 py-2 md:py-1.5 bg-brand-blue text-white rounded-lg font-bold shadow-md shadow-brand-blue/20';
+                } else {
+                    pageBtn.className = 'w-10 md:w-8 py-2 md:py-1.5 bg-white dark:bg-dark-card border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-brand-blue dark:hover:text-white font-medium transition-colors';
+                }
+                pageBtn.innerText = i;
+                pageBtn.onclick = () => { currentPage = i; renderTable(false); };
+                container.appendChild(pageBtn);
+            }
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `px-3.5 py-2 md:px-3 md:py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg font-medium transition-colors ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`;
+            nextBtn.innerText = 'Next';
+            nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+            nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderTable(false); } };
+            container.appendChild(nextBtn);
+        }
+
+        // Global functions for filter
+        window.filterTable = () => renderTable(true);
+
+        // Initial render
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+        });
+    </script>
+</body>
+</html>

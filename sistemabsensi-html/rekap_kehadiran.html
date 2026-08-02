@@ -1,0 +1,485 @@
+<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Rekap Kehadiran - Sistem Absensi UKM Taekwondo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts: Poppins (Heading) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: "#3554d1",
+                            hover: "#2841a8",
+                            light: "#eef2ff",
+                        },
+                        status: {
+                            hadir: { bg: "#edfcf4", text: "#16a34a" },
+                            izin: { bg: "#eff6ff", text: "#3b82f6" },
+                            sakit: { bg: "#fefce8", text: "#eab308" },
+                            alfa: { bg: "#fef2f2", text: "#ef4444" }
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
+                        'card': '0 4px 20px -4px rgba(0,0,0,0.03)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base background handling for Light/Dark */
+        body { background-color: #F4F7FE; transition: background-color 0.3s ease, color 0.3s ease; }
+        .dark body { background-color: #0f172a; } /* Slate 900 */
+        
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Trik kalender native agar clickable di area box text */
+        input[type="date"] {
+            position: relative;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; z-index: 10;
+        }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .sidebar-menu { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .sidebar-menu.open { transform: translateX(0); }
+        }
+    </style>
+
+    <!-- Initialize Dark Mode to prevent flash -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="text-gray-800 dark:text-gray-200 flex min-h-screen font-sans">
+
+    <!-- Mobile Header (Visible only on max-width: 768px) -->
+    <div class="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 z-40 px-5 py-3 flex items-center justify-between shadow-sm transition-colors">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-brand-blue text-white rounded-xl flex items-center justify-center font-heading font-bold text-sm shadow-md">UT</div>
+            <div>
+                <h1 class="font-heading font-bold text-gray-900 dark:text-white text-sm leading-tight">Rekap Kehadiran</h1>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">UKM Taekwondo</p>
+            </div>
+        </div>
+        <button onclick="toggleMenu()" class="text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-brand-blue transition-colors focus:outline-none p-1">
+            <span class="material-symbols-outlined text-[28px]">menu</span>
+        </button>
+    </div>
+
+    <!-- Mobile Overlay Background -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 hidden transition-opacity md:hidden" onclick="toggleMenu()"></div>
+
+    <!-- SideNavBar -->
+    <aside id="sidebar" class="sidebar-menu fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-gray-800 flex-col p-6 z-50 shadow-[1px_0_15px_rgba(0,0,0,0.03)] dark:shadow-none border-r border-gray-100 dark:border-gray-700 md:translate-x-0 md:flex flex hidden transition-colors duration-300">
+        <!-- Brand Header -->
+        <div class="flex items-center justify-between mb-10 pl-2">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-brand-blue text-white rounded-2xl flex items-center justify-center font-heading font-bold text-xl shadow-lg shadow-brand-blue/30">
+                    UT
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-gray-900 dark:text-white text-lg leading-tight">UKM Taekwondo</h1>
+                    <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-0.5">Admin Dashboard</p>
+                </div>
+            </div>
+            <!-- Close Button (Mobile Only) -->
+            <button onclick="toggleMenu()" class="md:hidden text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-gray-700">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 space-y-2 overflow-y-auto">
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="dashboard.html">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="proses_absensi.html">
+                <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                <span class="text-sm">Absen</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="database_anggota.html">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+                <span class="text-sm">Data Anggota</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="perizinan.html">
+                <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                <span class="text-sm">Perizinan</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="manajemen_petugas.html">
+                <span class="material-symbols-outlined text-[20px]">badge</span>
+                <span class="text-sm">Petugas Absensi</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="jadwal_latihan.html">
+                <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+                <span class="text-sm">Jadwal</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="manajemen_hari_libur.html">
+                <span class="material-symbols-outlined text-[20px]">event_busy</span>
+                <span class="text-sm">Hari Libur</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 bg-brand-blue text-white rounded-2xl font-semibold shadow-md shadow-brand-blue/20 transition-transform hover:scale-[1.02]" href="rekap_kehadiran.html">
+                <span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+                <span class="text-sm">Rekap Kehadiran</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="settings.html">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm">Settings</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 space-y-2">
+            <!-- Dark Mode Toggle -->
+            <button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium focus:outline-none">
+                <span class="material-symbols-outlined text-[20px]" id="darkModeIcon">dark_mode</span>
+                <span class="text-sm" id="darkModeText">Dark Mode</span>
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-3.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-2xl font-medium focus:outline-none">
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+                <span class="text-sm">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="w-full md:ml-[280px] pt-20 md:pt-8 min-h-screen pb-12 transition-all duration-300">
+        <div class="p-5 md:p-6 max-w-[1280px] mx-auto space-y-6 md:space-y-8">
+            
+            <!-- Page Header -->
+            <div class="mb-2">
+                <h1 class="font-heading font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight transition-colors">Rekap Kehadiran</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Filter dan unduh data absensi anggota untuk laporan periodik</p>
+            </div>
+
+            <!-- Filter Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 p-5 md:p-7 shadow-card relative overflow-hidden transition-colors duration-300">
+                <!-- Background decoration element -->
+                <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand-light dark:bg-brand-blue/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="flex flex-col md:flex-row md:items-end gap-4 md:gap-5 relative z-10">
+                    <div class="flex-1 w-full space-y-2">
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal Awal</label>
+                        <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-4 focus-within:ring-brand-light dark:focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center h-12">
+                            <input type="date" id="startDate" class="w-full px-4 pl-12 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none cursor-pointer relative z-10 border-0 ring-0 focus:ring-0" style="color-scheme: light dark;">
+                            <span class="material-symbols-outlined absolute left-4 text-gray-400 pointer-events-none z-0 text-[20px]">calendar_today</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 w-full space-y-2">
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal Akhir</label>
+                        <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-4 focus-within:ring-brand-light dark:focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center h-12">
+                            <input type="date" id="endDate" class="w-full px-4 pl-12 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none cursor-pointer relative z-10 border-0 ring-0 focus:ring-0" style="color-scheme: light dark;">
+                            <span class="material-symbols-outlined absolute left-4 text-gray-400 pointer-events-none z-0 text-[20px]">calendar_today</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto pt-2 md:pt-0 shrink-0">
+                        <button onclick="applyFilter()" class="w-full sm:w-auto flex-1 sm:flex-none py-3.5 px-7 bg-brand-blue text-white rounded-2xl font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-all flex items-center justify-center gap-2 focus:outline-none">
+                            <span class="material-symbols-outlined text-[20px]">filter_alt</span>
+                            Filter
+                        </button>
+                        <button onclick="exportToExcel()" class="w-full sm:w-auto flex-1 sm:flex-none py-3.5 px-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-brand-blue dark:hover:text-brand-light hover:border-brand-blue/30 transition-colors flex items-center justify-center gap-2 shadow-sm focus:outline-none">
+                            <span class="material-symbols-outlined text-[20px]">download</span>
+                            Export Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Banner -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-brand-light dark:bg-brand-blue/10 rounded-2xl p-4 md:p-5 border border-brand-blue/10 dark:border-brand-blue/20 gap-3 md:gap-0 transition-colors duration-300">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Menampilkan data dari <span class="font-bold text-gray-900 dark:text-white" id="summaryRange">1 Jul 2026 - 31 Jul 2026</span> (Total: <span id="summaryTotal">0</span> data)
+                </p>
+                <div class="flex flex-wrap gap-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>Hadir: <span id="countHadir">0</span></span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>Izin: <span id="countIzin">0</span></span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>Sakit: <span id="countSakit">0</span></span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>Alfa: <span id="countAlfa">0</span></span>
+                </div>
+            </div>
+
+            <!-- Data Table Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 shadow-card flex flex-col overflow-hidden transition-colors duration-300">
+                <div class="w-full overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 transition-colors">
+                                <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">NAMA ANGGOTA</th>
+                                <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">NIM</th>
+                                <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">TANGGAL LATIHAN</th>
+                                <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-50 dark:divide-gray-700">
+                            <!-- Data rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-center">
+                    <span class="material-symbols-outlined text-[48px] text-gray-300 dark:text-gray-600 mb-3">search_off</span>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Tidak ada data ditemukan</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Coba sesuaikan rentang tanggal pada filter.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Javascript Logic -->
+    <script>
+        /* Mobile Menu Navigation */
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden'); 
+                setTimeout(() => {
+                    sidebar.classList.add('open');
+                    overlay.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                }, 10);
+            } else if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+                
+                setTimeout(() => { sidebar.classList.add('hidden'); }, 300);
+            }
+        }
+
+        /* Dark Mode Logic */
+        function toggleDarkMode() {
+            const htmlClasses = document.documentElement.classList;
+            if (htmlClasses.contains('dark')) {
+                htmlClasses.remove('dark');
+                localStorage.setItem('theme', 'light');
+                updateDarkModeUI(false);
+            } else {
+                htmlClasses.add('dark');
+                localStorage.setItem('theme', 'dark');
+                updateDarkModeUI(true);
+            }
+        }
+
+        function updateDarkModeUI(isDark) {
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if(icon && text) {
+                icon.innerText = isDark ? 'light_mode' : 'dark_mode';
+                text.innerText = isDark ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+        
+        if (document.documentElement.classList.contains('dark')) {
+            updateDarkModeUI(true);
+        }
+
+        /* Data Mockup & Logic */
+        // Dummy data for Juli 2026
+        const allData = [
+            { id: 1, nama: 'Budi Santoso', nim: '220018244', tanggal: '2026-07-14', status: 'Hadir' },
+            { id: 2, nama: 'Lestari', nim: '2300018249', tanggal: '2026-07-14', status: 'Sakit' },
+            { id: 3, nama: 'Andi Wijaya', nim: '210029344', tanggal: '2026-07-17', status: 'Alfa' },
+            { id: 4, nama: 'Dimas Anggara', nim: '210003445', tanggal: '2026-07-20', status: 'Izin' },
+            { id: 5, nama: 'Siti Aminah', nim: '230005511', tanggal: '2026-07-24', status: 'Hadir' },
+            { id: 6, nama: 'Budi Santoso', nim: '220018244', tanggal: '2026-07-24', status: 'Hadir' },
+            { id: 7, nama: 'Andi Wijaya', nim: '210029344', tanggal: '2026-07-28', status: 'Hadir' },
+            { id: 8, nama: 'Rina Melati', nim: '240001122', tanggal: '2026-08-04', status: 'Hadir' } // Data luar range default
+        ];
+
+        let currentFilteredData = [];
+
+        // Helper: Format Date for Display (e.g., "Selasa, 14 Jul 2026")
+        function formatDateIndo(dateStr) {
+            const date = new Date(dateStr);
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate().toString().padStart(2, '0');
+            const monthName = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${dayName}, ${day} ${monthName} ${year}`;
+        }
+
+        // Helper: Format short date (e.g., "1 Jul 2026")
+        function formatShortDate(dateStr) {
+            const date = new Date(dateStr);
+            const months = ['Jul', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        function getStatusClasses(status) {
+            switch(status) {
+                case 'Hadir': return 'bg-status-hadir-bg text-status-hadir-text dark:bg-green-900/30 dark:text-green-400';
+                case 'Izin':  return 'bg-status-izin-bg text-status-izin-text dark:bg-blue-900/30 dark:text-blue-400';
+                case 'Sakit': return 'bg-status-sakit-bg text-status-sakit-text dark:bg-yellow-900/30 dark:text-yellow-400';
+                case 'Alfa':  return 'bg-status-alfa-bg text-status-alfa-text dark:bg-red-900/30 dark:text-red-400';
+                default:      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-brand-light/40 dark:hover:bg-gray-700/40 transition-colors group';
+                    
+                    const dateFormatted = formatDateIndo(item.tanggal);
+                    const statusClass = getStatusClasses(item.status);
+
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 md:py-4 md:px-6 font-bold text-gray-900 dark:text-white text-[11px] md:text-sm group-hover:text-brand-blue dark:group-hover:text-brand-light transition-colors">
+                            ${item.nama}
+                            <span class="block sm:hidden text-[10px] text-gray-500 dark:text-gray-400 font-normal mt-0.5">${dateFormatted}</span>
+                        </td>
+                        <td class="py-3 px-3 md:py-4 md:px-6 text-[11px] md:text-sm font-medium text-gray-500 dark:text-gray-400">${item.nim}</td>
+                        <td class="py-3 px-3 md:py-4 md:px-6 text-[11px] md:text-sm font-medium text-gray-600 dark:text-gray-300 hidden sm:table-cell">${dateFormatted}</td>
+                        <td class="py-3 px-3 md:py-4 md:px-6">
+                            <span class="inline-flex items-center justify-center px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[9px] md:text-[11px] font-bold tracking-wide ${statusClass}">
+                                ${item.status}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function updateSummary(data, start, end) {
+            let hadir = 0, izin = 0, sakit = 0, alfa = 0;
+            
+            data.forEach(item => {
+                if(item.status === 'Hadir') hadir++;
+                if(item.status === 'Izin') izin++;
+                if(item.status === 'Sakit') sakit++;
+                if(item.status === 'Alfa') alfa++;
+            });
+
+            document.getElementById('countHadir').innerText = hadir;
+            document.getElementById('countIzin').innerText = izin;
+            document.getElementById('countSakit').innerText = sakit;
+            document.getElementById('countAlfa').innerText = alfa;
+            document.getElementById('summaryTotal').innerText = data.length;
+            
+            document.getElementById('summaryRange').innerText = `${formatShortDate(start)} - ${formatShortDate(end)}`;
+        }
+
+        function applyFilter() {
+            const startDateStr = document.getElementById('startDate').value;
+            const endDateStr = document.getElementById('endDate').value;
+            
+            if (!startDateStr || !endDateStr) {
+                alert("Harap tentukan tanggal awal dan tanggal akhir.");
+                return;
+            }
+
+            const start = new Date(startDateStr);
+            const end = new Date(endDateStr);
+            
+            // Set end date to end of day to include the full day in filtering
+            end.setHours(23, 59, 59, 999); 
+
+            currentFilteredData = allData.filter(item => {
+                const itemDate = new Date(item.tanggal);
+                return itemDate >= start && itemDate <= end;
+            });
+
+            // Sort by date ascending
+            currentFilteredData.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+            renderTable(currentFilteredData);
+            updateSummary(currentFilteredData, startDateStr, endDateStr);
+        }
+
+        function exportToExcel() {
+            if (currentFilteredData.length === 0) {
+                alert("Tidak ada data untuk diexport pada rentang tanggal ini.");
+                return;
+            }
+
+            // Create CSV string with BOM for Excel UTF-8 support
+            let csvContent = "\uFEFF"; 
+            csvContent += "NAMA ANGGOTA,NIM,TANGGAL LATIHAN,STATUS\n";
+            
+            currentFilteredData.forEach(row => {
+                // Ensure text formatting
+                csvContent += `"${row.nama}","${row.nim}","${row.tanggal}","${row.status}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Rekap_Absensi_${document.getElementById('startDate').value}_sd_${document.getElementById('endDate').value}.csv`);
+            document.body.appendChild(link);
+            
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialize defaults on load
+        window.onload = () => {
+            // Default Range: 1 July 2026 - 31 July 2026
+            document.getElementById('startDate').value = '2026-07-01';
+            document.getElementById('endDate').value = '2026-07-31';
+            applyFilter(); // Will render table and update summary based on defaults
+        };
+    </script>
+</body>
+</html>
+<!-- ... existing code ... -->

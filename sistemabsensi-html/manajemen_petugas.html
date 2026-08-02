@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Manajemen Petugas - Sistem Absensi UKM Taekwondo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts: Poppins (Heading) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: 'class', // Enable Dark Mode based on class
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: "#3554d1",
+                            hover: "#2841a8",
+                            light: "#eef2ff",
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
+                        'card': '0 4px 20px -4px rgba(0,0,0,0.03)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base background handling for Light/Dark */
+        body { background-color: #F4F7FE; transition: background-color 0.3s ease, color 0.3s ease; }
+        .dark body { background-color: #0f172a; } /* dark:bg-slate-900 equivalent */
+
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .sidebar-menu { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .sidebar-menu.open { transform: translateX(0); }
+        }
+    </style>
+    
+    <!-- Initialize Dark Mode to prevent flash -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="text-gray-800 dark:text-gray-200 flex min-h-screen font-sans">
+
+    <!-- Mobile Header (Visible only on max-width: 768px) -->
+    <div class="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 z-40 px-5 py-3 flex items-center justify-between shadow-sm transition-colors duration-300">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-brand-blue text-white rounded-xl flex items-center justify-center font-heading font-bold text-sm shadow-md">UT</div>
+            <div>
+                <h1 class="font-heading font-bold text-gray-900 dark:text-white text-sm leading-tight">Manajemen Petugas</h1>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">UKM Taekwondo</p>
+            </div>
+        </div>
+        <button onclick="toggleMenu()" class="text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-brand-blue transition-colors focus:outline-none p-1">
+            <span class="material-symbols-outlined text-[28px]">menu</span>
+        </button>
+    </div>
+
+    <!-- Mobile Overlay Background -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 hidden transition-opacity md:hidden" onclick="toggleMenu()"></div>
+
+    <!-- SideNavBar -->
+    <aside id="sidebar" class="sidebar-menu fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-gray-800 flex-col p-6 z-50 shadow-[1px_0_15px_rgba(0,0,0,0.03)] dark:shadow-none border-r border-gray-100 dark:border-gray-700 md:translate-x-0 md:flex flex hidden transition-colors duration-300">
+        <!-- Brand Header -->
+        <div class="flex items-center justify-between mb-10 pl-2">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-brand-blue text-white rounded-2xl flex items-center justify-center font-heading font-bold text-xl shadow-lg shadow-brand-blue/30">
+                    UT
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-gray-900 dark:text-white text-lg leading-tight">UKM Taekwondo</h1>
+                    <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-0.5">Admin Dashboard</p>
+                </div>
+            </div>
+            <!-- Close Button (Mobile Only) -->
+            <button onclick="toggleMenu()" class="md:hidden text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-gray-700">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 space-y-2 overflow-y-auto">
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                <span class="text-sm">Absen</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+                <span class="text-sm">Data Anggota</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                <span class="text-sm">Perizinan</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 bg-brand-blue text-white rounded-2xl font-semibold shadow-md shadow-brand-blue/20 transition-transform hover:scale-[1.02]" href="#">
+                <span class="material-symbols-outlined text-[20px]">badge</span>
+                <span class="text-sm">Petugas Absensi</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+                <span class="text-sm">Jadwal</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">event_busy</span>
+                <span class="text-sm">Hari Libur</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+                <span class="text-sm">Rekap Kehadiran</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm">Settings</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto pt-6 space-y-2 border-t border-gray-100 dark:border-gray-700">
+            <!-- Dark Mode Toggle Button -->
+            <button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium">
+                <span class="material-symbols-outlined text-[20px]" id="darkModeIcon">dark_mode</span>
+                <span class="text-sm" id="darkModeText">Dark Mode</span>
+            </button>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+                <span class="text-sm">Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="w-full md:ml-[280px] pt-20 md:pt-8 min-h-screen pb-12 transition-all duration-300">
+        <div class="p-5 md:p-6 max-w-[1280px] mx-auto space-y-6 md:space-y-8">
+            
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div>
+                    <h1 class="font-heading font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight transition-colors">Manajemen Petugas</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Kelola akun login untuk anggota yang bertugas melakukan scan absensi</p>
+                </div>
+                
+                <button onclick="openFormModal()" class="flex items-center justify-center gap-2 px-6 py-3 md:py-2.5 bg-brand-blue text-white rounded-xl md:rounded-full font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-all w-full sm:w-auto">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                    Tambah Petugas
+                </button>
+            </div>
+
+            <!-- Main Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 shadow-card flex flex-col transition-colors duration-300">
+                
+                <!-- Table Container (Search Bar Removed) -->
+                <div class="overflow-x-auto w-full pt-4"> <!-- Added padding top to replace search bar space -->
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 transition-colors">
+                                <th class="py-3 px-4 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">Profil Anggota</th>
+                                <th class="py-3 px-2 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">Kontak & Login</th>
+                                <th class="py-3 px-2 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">Jadwal Absen</th>
+                                <th class="py-3 px-4 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider text-right w-24 md:w-36">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-50 dark:divide-gray-700">
+                            <!-- Dynamic Content Rendered Here via JS -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Empty State (Hidden initially) -->
+                    <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-center">
+                        <span class="material-symbols-outlined text-[48px] text-gray-300 dark:text-gray-600 mb-3">person_off</span>
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Tidak ada data petugas</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Gunakan tombol 'Tambah Petugas' untuk memasukkan data baru.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Tambah/Edit -->
+    <div id="formModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300" id="formModalContent">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white" id="modalTitle">Tambah Petugas</h3>
+                <button onclick="closeFormModal()" class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus:outline-none">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 space-y-5">
+                <input type="hidden" id="petugasId">
+                
+                <!-- Cari Anggota (Only visible when adding new OR allows reset) -->
+                <div id="cariAnggotaContainer" class="relative">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Cari Anggota <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">person_search</span>
+                        <input type="text" id="searchAnggota" onkeyup="handleSearchAnggota()" autocomplete="off" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-sm text-gray-800 dark:text-white focus:outline-none focus:border-brand-blue dark:focus:border-brand-blue/50 transition-all" placeholder="Ketik nama atau NIM anggota...">
+                    </div>
+                    <!-- Dropdown List -->
+                    <ul id="dropdownAnggota" class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto hidden">
+                        <!-- Dropdown items rendered via JS -->
+                    </ul>
+                </div>
+                
+                <!-- Selected Anggota Info (Hidden initially) -->
+                <div id="selectedAnggotaInfo" class="hidden p-3 bg-brand-light/50 dark:bg-gray-700/50 rounded-xl border border-brand-blue/20 dark:border-gray-600 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-blue text-white flex items-center justify-center font-bold text-sm shadow-sm" id="selInitial"></div>
+                        <div>
+                            <p class="font-bold text-sm text-gray-900 dark:text-white leading-none" id="selNama"></p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1" id="selNim"></p>
+                        </div>
+                    </div>
+                    <button onclick="resetAnggotaSelection()" class="text-xs text-brand-blue dark:text-brand-light font-semibold hover:underline">Ganti</button>
+                </div>
+                
+                <!-- Credentials Section -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email Login <span class="text-red-500">*</span></label>
+                        <input type="email" id="emailPetugas" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-sm text-gray-800 dark:text-white focus:outline-none focus:border-brand-blue transition-all" placeholder="email@contoh.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Password <span class="text-red-500">*</span></label>
+                        <input type="password" id="passPetugas" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-sm text-gray-800 dark:text-white focus:outline-none focus:border-brand-blue transition-all" placeholder="••••••••">
+                    </div>
+                </div>
+                
+                <p id="formError" class="hidden text-xs text-red-500 font-medium"></p>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80 flex justify-end gap-3">
+                <button onclick="closeFormModal()" class="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none">Batal</button>
+                <button onclick="savePetugas()" class="px-5 py-2.5 bg-brand-blue text-white rounded-xl text-sm font-semibold hover:bg-brand-hover transition-colors shadow-md shadow-brand-blue/30 focus:outline-none">Simpan Petugas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div id="deleteModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl shadow-2xl p-6 text-center transform scale-95 transition-transform duration-300" id="deleteModalContent">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-outlined text-[32px]">warning</span>
+            </div>
+            <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white mb-2">Hapus Petugas?</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Apakah Anda yakin ingin menghapus petugas ini? Hak akses login mereka akan segera dicabut.</p>
+            <input type="hidden" id="deleteId">
+            <div class="flex justify-center gap-3">
+                <button onclick="closeDeleteModal()" class="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none w-full">Batal</button>
+                <button onclick="confirmDelete()" class="px-5 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-md shadow-red-500/30 focus:outline-none w-full">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Mobile Menu Navigation */
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden'); 
+                setTimeout(() => {
+                    sidebar.classList.add('open');
+                    overlay.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; 
+                }, 10);
+            } else if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+                
+                setTimeout(() => { sidebar.classList.add('hidden'); }, 300);
+            }
+        }
+
+        /* Dark Mode Logic */
+        function toggleDarkMode() {
+            const htmlClasses = document.documentElement.classList;
+            if (htmlClasses.contains('dark')) {
+                htmlClasses.remove('dark');
+                localStorage.setItem('theme', 'light');
+                updateDarkModeUI(false);
+            } else {
+                htmlClasses.add('dark');
+                localStorage.setItem('theme', 'dark');
+                updateDarkModeUI(true);
+            }
+        }
+
+        function updateDarkModeUI(isDark) {
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if(icon && text) {
+                icon.innerText = isDark ? 'light_mode' : 'dark_mode';
+                text.innerText = isDark ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+        
+        // Initial setup for dark mode button UI based on load state
+        if (document.documentElement.classList.contains('dark')) {
+            updateDarkModeUI(true);
+        }
+
+        // Mock Data Anggota (sumber untuk mencari)
+        const dbAnggota = [
+            { nim: '220018244', nama: 'Budi Santoso' },
+            { nim: '210003445', nama: 'Dimas Anggara' },
+            { nim: '230005511', nama: 'Siti Aminah' },
+            { nim: '220006789', nama: 'Andi Saputra' },
+            { nim: '240001122', nama: 'Rina Melati' }
+        ];
+
+        // Mock Data Petugas (tabel utama)
+        let dbPetugas = [
+            { id: 1, nim: '220018244', nama: 'Budi Santoso', email: 'budi@taekwondo.com', password: 'password123', jadwal: 'Senin, Rabu', color: '#4F46E5' },
+            { id: 2, nim: '210003445', nama: 'Dimas Anggara', email: 'dimas@taekwondo.com', password: 'password123', jadwal: 'Selasa, Kamis', color: '#6860ef' }
+        ];
+
+        // Colors for avatar consistency
+        const avatarColors = ['#4F46E5', '#6860ef', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899'];
+        let selectedAnggotaCache = null;
+
+        // Table Render Function
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            tbody.innerHTML = '';
+            
+            // Search logic removed, directly using dbPetugas
+            const filteredData = dbPetugas;
+
+            if (filteredData.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                
+                filteredData.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-brand-light/40 dark:hover:bg-gray-700/40 transition-colors group';
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 md:py-4 md:px-6">
+                            <div class="flex items-center gap-2.5 md:gap-4">
+                                <div class="w-9 h-9 md:w-11 md:h-11 rounded-full text-white flex items-center justify-center font-heading font-bold text-base md:text-lg shadow-md shrink-0" style="background-color: ${p.color}">
+                                    ${p.nama.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-gray-900 dark:text-white text-xs md:text-sm">${p.nama}</span>
+                                    <span class="text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">NIM: ${p.nim}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-2 md:py-4 md:px-6">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-700 dark:text-gray-300 text-xs md:text-sm">${p.email}</span>
+                                <span class="text-[10px] md:text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5">Pass: ********</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-2 md:py-4 md:px-6">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] md:text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                ${p.jadwal}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 md:py-4 md:px-6 text-right">
+                            <div class="flex items-center justify-end gap-1 md:gap-2">
+                                <button onclick="openFormModal(${p.id})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-500 dark:hover:text-amber-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Edit Data">
+                                    <span class="material-symbols-outlined text-[18px] md:text-[20px]">edit</span>
+                                </button>
+                                <button onclick="openDeleteModal(${p.id})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Hapus Data">
+                                    <span class="material-symbols-outlined text-[18px] md:text-[20px]">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Modal Handlers
+        const fModal = document.getElementById('formModal');
+        const fContent = document.getElementById('formModalContent');
+        const dModal = document.getElementById('deleteModal');
+        const dContent = document.getElementById('deleteModalContent');
+
+        function openFormModal(id = null) {
+            fModal.classList.remove('hidden');
+            fModal.classList.add('flex');
+            setTimeout(() => { fContent.classList.remove('scale-95'); fContent.classList.add('scale-100'); }, 10);
+            
+            document.getElementById('formError').classList.add('hidden');
+            resetAnggotaSelection();
+            
+            if (id) {
+                // Edit Mode
+                document.getElementById('modalTitle').innerText = 'Edit Petugas';
+                const petugas = dbPetugas.find(p => p.id === id);
+                if (petugas) {
+                    document.getElementById('petugasId').value = petugas.id;
+                    setAnggotaSelection({nim: petugas.nim, nama: petugas.nama});
+                    document.getElementById('emailPetugas').value = petugas.email;
+                    document.getElementById('passPetugas').value = petugas.password;
+                }
+            } else {
+                // Add Mode
+                document.getElementById('modalTitle').innerText = 'Tambah Petugas';
+                document.getElementById('petugasId').value = '';
+                document.getElementById('emailPetugas').value = '';
+                document.getElementById('passPetugas').value = '';
+            }
+        }
+
+        function closeFormModal() {
+            fContent.classList.remove('scale-100'); 
+            fContent.classList.add('scale-95');
+            setTimeout(() => { fModal.classList.add('hidden'); fModal.classList.remove('flex'); }, 200);
+        }
+
+        // Anggota Search inside Modal
+        function handleSearchAnggota() {
+            const input = document.getElementById('searchAnggota').value.toLowerCase();
+            const list = document.getElementById('dropdownAnggota');
+            
+            if (input.length < 1) {
+                list.classList.add('hidden');
+                return;
+            }
+
+            const matches = dbAnggota.filter(a => 
+                a.nama.toLowerCase().includes(input) || 
+                a.nim.toLowerCase().includes(input)
+            );
+
+            list.innerHTML = '';
+            if (matches.length > 0) {
+                matches.forEach(m => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-50 dark:border-gray-700/50 last:border-0 transition-colors';
+                    li.innerHTML = `
+                        <div class="font-semibold text-sm text-gray-900 dark:text-white">${m.nama}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">NIM: ${m.nim}</div>
+                    `;
+                    li.onclick = () => setAnggotaSelection(m);
+                    list.appendChild(li);
+                });
+                list.classList.remove('hidden');
+            } else {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center italic';
+                li.innerText = 'Anggota tidak ditemukan';
+                list.appendChild(li);
+                list.classList.remove('hidden');
+            }
+        }
+
+        function setAnggotaSelection(anggota) {
+            selectedAnggotaCache = anggota;
+            document.getElementById('dropdownAnggota').classList.add('hidden');
+            document.getElementById('cariAnggotaContainer').classList.add('hidden');
+            
+            const infoBox = document.getElementById('selectedAnggotaInfo');
+            document.getElementById('selNama').innerText = anggota.nama;
+            document.getElementById('selNim').innerText = 'NIM: ' + anggota.nim;
+            document.getElementById('selInitial').innerText = anggota.nama.charAt(0).toUpperCase();
+            
+            infoBox.classList.remove('hidden');
+            document.getElementById('searchAnggota').value = '';
+        }
+
+        function resetAnggotaSelection() {
+            selectedAnggotaCache = null;
+            document.getElementById('selectedAnggotaInfo').classList.add('hidden');
+            document.getElementById('cariAnggotaContainer').classList.remove('hidden');
+            document.getElementById('dropdownAnggota').classList.add('hidden');
+            document.getElementById('searchAnggota').value = '';
+            document.getElementById('searchAnggota').focus();
+        }
+
+        // Save Data
+        function savePetugas() {
+            const id = document.getElementById('petugasId').value;
+            const email = document.getElementById('emailPetugas').value;
+            const pass = document.getElementById('passPetugas').value;
+            const err = document.getElementById('formError');
+
+            if (!selectedAnggotaCache || !email || !pass) {
+                err.innerText = "Harap lengkapi semua field yang ditandai (*).";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            if (id) {
+                // Update
+                const index = dbPetugas.findIndex(p => p.id == id);
+                if (index > -1) {
+                    dbPetugas[index].nim = selectedAnggotaCache.nim;
+                    dbPetugas[index].nama = selectedAnggotaCache.nama;
+                    dbPetugas[index].email = email;
+                    dbPetugas[index].password = pass;
+                }
+            } else {
+                // Create
+                const newId = dbPetugas.length > 0 ? Math.max(...dbPetugas.map(p => p.id)) + 1 : 1;
+                const rColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
+                dbPetugas.push({
+                    id: newId,
+                    nim: selectedAnggotaCache.nim,
+                    nama: selectedAnggotaCache.nama,
+                    email: email,
+                    password: pass,
+                    jadwal: 'Menunggu Jadwal', // Default saat baru ditambahkan
+                    color: rColor
+                });
+            }
+
+            closeFormModal();
+            renderTable();
+        }
+
+        // Delete Logic
+        function openDeleteModal(id) {
+            document.getElementById('deleteId').value = id;
+            dModal.classList.remove('hidden');
+            dModal.classList.add('flex');
+            setTimeout(() => { dContent.classList.remove('scale-95'); dContent.classList.add('scale-100'); }, 10);
+        }
+
+        function closeDeleteModal() {
+            dContent.classList.remove('scale-100'); 
+            dContent.classList.add('scale-95');
+            setTimeout(() => { dModal.classList.add('hidden'); dModal.classList.remove('flex'); }, 200);
+        }
+
+        function confirmDelete() {
+            const id = document.getElementById('deleteId').value;
+            dbPetugas = dbPetugas.filter(p => p.id != id);
+            closeDeleteModal();
+            renderTable();
+        }
+
+        // Click outside to close dropdown
+        document.addEventListener('click', function(e) {
+            const searchContainer = document.getElementById('cariAnggotaContainer');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                document.getElementById('dropdownAnggota').classList.add('hidden');
+            }
+        });
+
+        // Initial Render
+        window.onload = () => {
+            renderTable();
+        }
+    </script>
+</body>
+</html>

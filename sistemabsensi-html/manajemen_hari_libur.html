@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Manajemen Hari Libur - Sistem Absensi UKM Taekwondo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts: Poppins (Heading) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: "#3554d1",
+                            hover: "#2841a8",
+                            light: "#eef2ff",
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
+                        'card': '0 4px 20px -4px rgba(0,0,0,0.03)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base background handling for Light/Dark */
+        body { background-color: #F4F7FE; transition: background-color 0.3s ease, color 0.3s ease; }
+        .dark body { background-color: #0f172a; } /* Slate 900 */
+        
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Trik agar seluruh form tanggal bisa diklik untuk membuka kalender */
+        input[type="date"] {
+            position: relative;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0; /* Sembunyikan icon bawaan, kita gunakan icon custom di HTML */
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .sidebar-menu { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .sidebar-menu.open { transform: translateX(0); }
+        }
+    </style>
+
+    <!-- Initialize Dark Mode to prevent flash -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="text-gray-800 dark:text-gray-200 flex min-h-screen font-sans">
+
+    <!-- Mobile Header (Visible only on max-width: 768px) -->
+    <div class="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 z-40 px-5 py-3 flex items-center justify-between shadow-sm transition-colors duration-300">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-brand-blue text-white rounded-xl flex items-center justify-center font-heading font-bold text-sm shadow-md">UT</div>
+            <div>
+                <h1 class="font-heading font-bold text-gray-900 dark:text-white text-sm leading-tight">Hari Libur</h1>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">UKM Taekwondo</p>
+            </div>
+        </div>
+        <button onclick="toggleMenu()" class="text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-brand-blue transition-colors focus:outline-none p-1">
+            <span class="material-symbols-outlined text-[28px]">menu</span>
+        </button>
+    </div>
+
+    <!-- Mobile Overlay Background -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 hidden transition-opacity md:hidden" onclick="toggleMenu()"></div>
+
+    <!-- SideNavBar -->
+    <aside id="sidebar" class="sidebar-menu fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-gray-800 flex-col p-6 z-50 shadow-[1px_0_15px_rgba(0,0,0,0.03)] dark:shadow-none border-r border-gray-100 dark:border-gray-700 md:translate-x-0 md:flex flex hidden transition-colors duration-300">
+        <!-- Brand Header -->
+        <div class="flex items-center justify-between mb-10 pl-2">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-brand-blue text-white rounded-2xl flex items-center justify-center font-heading font-bold text-xl shadow-lg shadow-brand-blue/30">
+                    UT
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-gray-900 dark:text-white text-lg leading-tight">UKM Taekwondo</h1>
+                    <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-0.5">Admin Dashboard</p>
+                </div>
+            </div>
+            <!-- Close Button (Mobile Only) -->
+            <button onclick="toggleMenu()" class="md:hidden text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-gray-700">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 space-y-2 overflow-y-auto">
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="dashboard.html">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="proses_absensi.html">
+                <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                <span class="text-sm">Absen</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="database_anggota.html">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+                <span class="text-sm">Data Anggota</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="perizinan.html">
+                <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                <span class="text-sm">Perizinan</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="manajemen_petugas.html">
+                <span class="material-symbols-outlined text-[20px]">badge</span>
+                <span class="text-sm">Petugas Absensi</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="jadwal_latihan.html">
+                <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+                <span class="text-sm">Jadwal</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 bg-brand-blue text-white rounded-2xl font-semibold shadow-md shadow-brand-blue/20 transition-transform hover:scale-[1.02]" href="manajemen_hari_libur.html">
+                <span class="material-symbols-outlined text-[20px]">event_busy</span>
+                <span class="text-sm">Hari Libur</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="rekap_kehadiran.html">
+                <span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+                <span class="text-sm">Rekap Kehadiran</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium" href="settings.html">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm">Settings</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto pt-6 space-y-2 border-t border-gray-100 dark:border-gray-700">
+            <!-- Dark Mode Toggle Button -->
+            <button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-brand-blue/20 transition-colors rounded-2xl font-medium">
+                <span class="material-symbols-outlined text-[20px]" id="darkModeIcon">dark_mode</span>
+                <span class="text-sm" id="darkModeText">Dark Mode</span>
+            </button>
+            <a class="flex items-center gap-3 px-4 py-3.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-2xl font-medium" href="#">
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+                <span class="text-sm">Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="w-full md:ml-[280px] pt-20 md:pt-8 min-h-screen pb-12 transition-all duration-300">
+        <div class="p-5 md:p-6 max-w-[1024px] mx-auto space-y-6 md:space-y-8">
+            
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div>
+                    <h1 class="font-heading font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight transition-colors">Hari Libur Latihan</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Atur tanggal pengecualian di mana absensi tidak akan dibuka</p>
+                </div>
+                
+                <button onclick="openFormModal()" class="flex items-center justify-center gap-2 px-6 py-3 md:py-2.5 bg-brand-blue text-white rounded-xl md:rounded-full font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-all w-full sm:w-auto">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                    Tambah Libur
+                </button>
+            </div>
+
+            <!-- Data Table Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 shadow-card flex flex-col overflow-hidden transition-colors duration-300">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse" id="holidayTable">
+                        <thead>
+                            <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 transition-colors">
+                                <th class="py-3 px-4 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">Tanggal</th>
+                                <th class="py-3 px-4 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keterangan</th>
+                                <th class="py-3 px-4 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider text-right w-24 md:w-32">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 dark:divide-gray-700" id="tableBody">
+                            <!-- Dynamic Content Rendered Here via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 shadow-card py-16 px-6 text-center flex-col items-center justify-center transition-colors duration-300">
+                <div class="w-20 h-20 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-5">
+                    <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500">event_busy</span>
+                </div>
+                <h3 class="font-heading font-bold text-xl text-gray-900 dark:text-white mb-2">Belum ada hari libur terdaftar</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto mb-8">Tambahkan pengecualian hari libur agar sistem tidak mengharapkan kehadiran pada tanggal tersebut.</p>
+                <button onclick="openFormModal()" class="flex items-center justify-center gap-2 px-6 py-3 bg-brand-blue text-white rounded-full font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                    Tambah Libur Pertama
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal Tambah/Edit -->
+    <div id="formModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300" id="formModalContent">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white" id="modalTitle">Tambah Hari Libur</h3>
+                <button onclick="closeFormModal()" class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus:outline-none">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 space-y-5">
+                <input type="hidden" id="liburId">
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tanggal Libur <span class="text-red-500">*</span></label>
+                    <!-- Penyesuaian container agar styling sama dengan input keterangan -->
+                    <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-1 focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center">
+                        <input type="date" id="tanggalLibur" class="w-full px-4 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none cursor-pointer relative z-10 border-0 ring-0 focus:ring-0" style="color-scheme: light dark;">
+                        <span class="material-symbols-outlined absolute right-4 text-gray-400 pointer-events-none z-0 text-[20px]">calendar_today</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Keterangan <span class="text-red-500">*</span></label>
+                    <input type="text" id="keteranganLibur" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-sm text-gray-800 dark:text-white focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/20 transition-all" placeholder="Misal: Libur Nasional Kemerdekaan">
+                </div>
+                
+                <p id="formError" class="hidden text-xs text-red-500 font-medium"></p>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80 flex justify-end gap-3">
+                <button onclick="closeFormModal()" class="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none">Batal</button>
+                <button onclick="saveLibur()" class="px-5 py-2.5 bg-brand-blue text-white rounded-xl text-sm font-semibold hover:bg-brand-hover transition-colors shadow-md shadow-brand-blue/30 focus:outline-none">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div id="deleteModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl shadow-2xl p-6 text-center transform scale-95 transition-transform duration-300" id="deleteModalContent">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-outlined text-[32px]">warning</span>
+            </div>
+            <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white mb-2">Hapus Libur?</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Apakah Anda yakin ingin menghapus data libur pada tanggal <strong id="deleteTanggalLabel" class="text-gray-700 dark:text-gray-300"></strong>?</p>
+            <input type="hidden" id="deleteId">
+            <div class="flex justify-center gap-3">
+                <button onclick="closeDeleteModal()" class="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none w-full">Batal</button>
+                <button onclick="confirmDelete()" class="px-5 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-md shadow-red-500/30 focus:outline-none w-full">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="fixed top-24 md:top-8 right-5 z-[200] transform -translate-y-10 opacity-0 transition-all duration-300 hidden bg-white dark:bg-gray-800 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-50 dark:border-gray-700 p-3 sm:p-4 pr-6 sm:pr-8 flex items-start gap-3 sm:gap-4">
+        <div id="toastIconContainer" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0">
+            <span id="toastIcon" class="material-symbols-outlined text-[18px] sm:text-[20px] font-bold"></span>
+        </div>
+        <div class="flex flex-col pt-0.5">
+            <h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white leading-tight"></h4>
+            <p id="toastMessage" class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium"></p>
+        </div>
+    </div>
+
+    <script>
+        /* Toast Notification Logic */
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const iconContainer = document.getElementById('toastIconContainer');
+            const icon = document.getElementById('toastIcon');
+            const titleEl = document.getElementById('toastTitle');
+            const msgEl = document.getElementById('toastMessage');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            
+            // Reset base classes for visibility and position
+            toast.className = 'fixed top-24 md:top-8 right-5 z-[200] transform transition-all duration-300 flex bg-white dark:bg-gray-800 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-50 dark:border-gray-700 p-3 sm:p-4 pr-6 sm:pr-8 items-start gap-3 sm:gap-4';
+            
+            // Clear icon container classes
+            iconContainer.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0';
+            
+            if (type === 'success') {
+                iconContainer.classList.add('bg-green-100', 'dark:bg-green-900/30', 'text-green-600', 'dark:text-green-400');
+                icon.innerText = 'check';
+            } else if (type === 'error') {
+                iconContainer.classList.add('bg-red-100', 'dark:bg-red-900/30', 'text-red-600', 'dark:text-red-400');
+                icon.innerText = 'close'; 
+            }
+
+            // Animate In (slide down from top)
+            toast.classList.remove('-translate-y-10', 'opacity-0', 'hidden');
+            
+            // Animate Out after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('-translate-y-10', 'opacity-0');
+                setTimeout(() => { toast.classList.add('hidden'); }, 300);
+            }, 3000);
+        }
+
+        /* Mobile Menu Navigation */
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden'); 
+                setTimeout(() => {
+                    sidebar.classList.add('open');
+                    overlay.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; 
+                }, 10);
+            } else if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+                
+                setTimeout(() => { sidebar.classList.add('hidden'); }, 300);
+            }
+        }
+
+        /* Dark Mode Logic */
+        function toggleDarkMode() {
+            const htmlClasses = document.documentElement.classList;
+            if (htmlClasses.contains('dark')) {
+                htmlClasses.remove('dark');
+                localStorage.setItem('theme', 'light');
+                updateDarkModeUI(false);
+            } else {
+                htmlClasses.add('dark');
+                localStorage.setItem('theme', 'dark');
+                updateDarkModeUI(true);
+            }
+        }
+
+        function updateDarkModeUI(isDark) {
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if(icon && text) {
+                icon.innerText = isDark ? 'light_mode' : 'dark_mode';
+                text.innerText = isDark ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+        
+        // Initial setup for dark mode button UI based on load state
+        if (document.documentElement.classList.contains('dark')) {
+            updateDarkModeUI(true);
+        }
+
+        /* CRUD Data Logic */
+        // Mock Data
+        let dbLibur = [
+            { id: 1, tanggal: '2026-08-17', keterangan: 'Libur Nasional - Hari Kemerdekaan RI' },
+            { id: 2, tanggal: '2026-12-25', keterangan: 'Cuti Bersama Akhir Tahun' }
+        ];
+
+        // Format Date to Indonesian format (e.g., Rabu, 17 Agustus 2026)
+        function formatDateIndo(dateString) {
+            const date = new Date(dateString);
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const monthName = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${dayName}, ${day} ${monthName} ${year}`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const tableContainer = document.getElementById('holidayTable');
+            const emptyState = document.getElementById('emptyState');
+            
+            tbody.innerHTML = '';
+            
+            // Sort data by date ascending
+            const sortedData = [...dbLibur].sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+            if (sortedData.length === 0) {
+                tableContainer.parentElement.parentElement.classList.add('hidden'); // Hide card wrapper
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                tableContainer.parentElement.parentElement.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                
+                sortedData.forEach(l => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-brand-light/40 dark:hover:bg-gray-700/40 transition-colors group';
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 md:py-4 md:px-6">
+                            <div class="flex items-start md:items-center gap-2 md:gap-3">
+                                <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0 mt-0.5 md:mt-0">
+                                    <span class="material-symbols-outlined text-[16px] md:text-[20px]">calendar_month</span>
+                                </div>
+                                <span class="font-bold text-gray-900 dark:text-white text-xs md:text-sm pt-1.5 md:pt-0">${formatDateIndo(l.tanggal)}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 md:py-4 md:px-6">
+                            <span class="font-medium text-gray-600 dark:text-gray-300 text-xs md:text-sm">${l.keterangan}</span>
+                        </td>
+                        <td class="py-3 px-4 md:py-4 md:px-6 text-right">
+                            <div class="flex items-center justify-end gap-1 md:gap-2">
+                                <button onclick="openFormModal(${l.id})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-500 dark:hover:text-amber-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Edit Data">
+                                    <span class="material-symbols-outlined text-[18px] md:text-[20px]">edit</span>
+                                </button>
+                                <button onclick="openDeleteModal(${l.id})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Hapus Data">
+                                    <span class="material-symbols-outlined text-[18px] md:text-[20px]">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Modal Handlers
+        const fModal = document.getElementById('formModal');
+        const fContent = document.getElementById('formModalContent');
+        const dModal = document.getElementById('deleteModal');
+        const dContent = document.getElementById('deleteModalContent');
+
+        function openFormModal(id = null) {
+            fModal.classList.remove('hidden');
+            fModal.classList.add('flex');
+            setTimeout(() => { fContent.classList.remove('scale-95'); fContent.classList.add('scale-100'); }, 10);
+            
+            document.getElementById('formError').classList.add('hidden');
+            
+            if (id) {
+                // Edit Mode
+                document.getElementById('modalTitle').innerText = 'Edit Hari Libur';
+                const libur = dbLibur.find(l => l.id === id);
+                if (libur) {
+                    document.getElementById('liburId').value = libur.id;
+                    document.getElementById('tanggalLibur').value = libur.tanggal;
+                    document.getElementById('keteranganLibur').value = libur.keterangan;
+                }
+            } else {
+                // Add Mode
+                document.getElementById('modalTitle').innerText = 'Tambah Hari Libur';
+                document.getElementById('liburId').value = '';
+                document.getElementById('tanggalLibur').value = '';
+                document.getElementById('keteranganLibur').value = '';
+            }
+        }
+
+        function closeFormModal() {
+            fContent.classList.remove('scale-100'); 
+            fContent.classList.add('scale-95');
+            setTimeout(() => { fModal.classList.add('hidden'); fModal.classList.remove('flex'); }, 200);
+        }
+
+        function saveLibur() {
+            const id = document.getElementById('liburId').value;
+            const tanggal = document.getElementById('tanggalLibur').value;
+            const keterangan = document.getElementById('keteranganLibur').value;
+            const err = document.getElementById('formError');
+
+            if (!tanggal || !keterangan) {
+                err.innerText = "Harap lengkapi semua field yang ditandai (*).";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            // Validasi duplikasi tanggal (jika baru, atau diedit menjadi tanggal yang sudah ada)
+            const exists = dbLibur.find(l => l.tanggal === tanggal && l.id != id);
+            if(exists) {
+                err.innerText = "Tanggal libur ini sudah terdaftar.";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            let actionText = '';
+            
+            if (id) {
+                // Update
+                const index = dbLibur.findIndex(l => l.id == id);
+                if (index > -1) {
+                    dbLibur[index].tanggal = tanggal;
+                    dbLibur[index].keterangan = keterangan;
+                    actionText = 'diperbarui';
+                }
+            } else {
+                // Create
+                const newId = dbLibur.length > 0 ? Math.max(...dbLibur.map(l => l.id)) + 1 : 1;
+                dbLibur.push({
+                    id: newId,
+                    tanggal: tanggal,
+                    keterangan: keterangan
+                });
+                actionText = 'ditambahkan';
+            }
+
+            closeFormModal();
+            renderTable();
+            showToast('Berhasil', `Data libur berhasil ${actionText}.`, 'success');
+        }
+
+        function openDeleteModal(id) {
+            const libur = dbLibur.find(l => l.id === id);
+            if (libur) {
+                document.getElementById('deleteId').value = id;
+                document.getElementById('deleteTanggalLabel').innerText = formatDateIndo(libur.tanggal);
+                
+                dModal.classList.remove('hidden');
+                dModal.classList.add('flex');
+                setTimeout(() => { dContent.classList.remove('scale-95'); dContent.classList.add('scale-100'); }, 10);
+            }
+        }
+
+        function closeDeleteModal() {
+            dContent.classList.remove('scale-100'); 
+            dContent.classList.add('scale-95');
+            setTimeout(() => { dModal.classList.add('hidden'); dModal.classList.remove('flex'); }, 200);
+        }
+
+        function confirmDelete() {
+            const id = document.getElementById('deleteId').value;
+            dbLibur = dbLibur.filter(l => l.id != id);
+            closeDeleteModal();
+            renderTable();
+            showToast('Dihapus', 'Data libur berhasil dihapus.', 'success');
+        }
+
+        // Initial Render
+        window.onload = () => {
+            renderTable();
+        }
+    </script>
+</body>
+</html>
