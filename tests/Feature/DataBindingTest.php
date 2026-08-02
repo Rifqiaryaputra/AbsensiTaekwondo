@@ -2,22 +2,28 @@
 
 namespace Tests\Feature;
 
+use App\Exports\RekapKehadiranExport;
 use App\Http\Controllers\DashboardController;
 use App\Livewire\DaftarAnggota;
 use App\Livewire\DashboardStats;
 use App\Livewire\KelolaHariLibur;
 use App\Livewire\KelolaJadwal;
 use App\Livewire\KelolaPetugas;
+use App\Livewire\RekapKehadiran;
+use App\Livewire\SettingsProfil;
 use App\Models\Absensi;
 use App\Models\Anggota;
 use App\Models\HariLibur;
 use App\Models\Jadwal;
+use App\Models\PengaturanProfil;
 use App\Models\User;
 use App\Services\AnggotaService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class DataBindingTest extends TestCase
@@ -436,6 +442,175 @@ class DataBindingTest extends TestCase
             ->set('prodiFilter', 'Matematika')
             ->assertSee('>Anggota Matematika<', false)
             ->assertDontSee('>Anggota Hukum<', false);
+    }
+
+    public function test_rekap_aggregates_totals_per_member_and_search(): void
+    {
+        $this->actingAs($this->admin());
+        [$a1, $u1] = $this->anggotaUser('220011601', 'Rekap Satu');
+        [$a2, $u2] = $this->anggotaUser('220011602', 'Rekap Dua');
+        $jadwal = Jadwal::create(['hari' => 'Senin', 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+
+        $base = Carbon::now()->startOfMonth();
+        $d1 = $base->copy()->addDays(1)->toDateString();
+        $d2 = $base->copy()->addDays(2)->toDateString();
+        $d3 = $base->copy()->addDays(3)->toDateString();
+
+        foreach ([
+            ['hadir', $a1->id, $d1],
+            ['hadir', $a1->id, $d2],
+            ['sakit', $a1->id, $d3],
+            ['alfa', $a2->id, $d1],
+            ['izin', $a2->id, $d2],
+        ] as [$status, $anggotaId, $date]) {
+            Absensi::create([
+                'anggota_id' => $anggotaId,
+                'jadwal_id' => $jadwal->id,
+                'tanggal' => $date,
+                'status' => $status,
+                'sumber' => 'scan',
+            ]);
+        }
+
+        $comp = new RekapKehadiran;
+        $comp->start = Carbon::now()->startOfMonth()->toDateString();
+        $comp->end = Carbon::now()->endOfMonth()->toDateString();
+        $rows = $comp->anggotaQuery()->get();
+        $row1 = $rows->firstWhere('id', $a1->id);
+        $row2 = $rows->firstWhere('id', $a2->id);
+
+        $this->assertSame(2, $row1->total_hadir);
+        $this->assertSame(1, $row1->total_sakit);
+        $this->assertSame(0, $row1->total_alfa);
+        $this->assertSame(1, $row2->total_alfa);
+        $this->assertSame(1, $row2->total_izin);
+
+        Livewire::test(RekapKehadiran::class)
+            ->set('search', 'Rekap Dua')
+            ->assertSee('Rekap Dua')
+            ->assertDontSee('Rekap Satu');
+    }
+
+    public function test_rekap_excel_export_format_and_filter(): void
+    {
+        $this->actingAs($this->admin());
+        [$a1, $u1] = $this->anggotaUser('220011603', 'Export Satu');
+        [$a2, $u2] = $this->anggotaUser('220011604', 'Export Dua');
+        $jadwal = Jadwal::create(['hari' => 'Senin', 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+
+        $base = Carbon::now()->startOfMonth();
+        foreach ([
+            ['hadir', $a1->id, 1],
+            ['sakit', $a1->id, 2],
+            ['alfa', $a2->id, 1],
+        ] as [$status, $anggotaId, $day]) {
+            Absensi::create([
+                'anggota_id' => $anggotaId,
+                'jadwal_id' => $jadwal->id,
+                'tanggal' => $base->copy()->addDays($day)->toDateString(),
+                'status' => $status,
+                'sumber' => 'scan',
+            ]);
+        }
+
+        $start = Carbon::now()->startOfMonth()->toDateString();
+        $end = Carbon::now()->endOfMonth()->toDateString();
+
+        // Tanpa filter search -> semua anggota
+        $path = 'rekap_test.xlsx';
+        Excel::store(new RekapKehadiranExport('', $start, $end), $path, 'local', \Maatwebsite\Excel\Excel::XLSX);
+        $rows = IOFactory::load(storage_path('app/private/'.$path))->getActiveSheet()->toArray(null, true, false);
+        $this->assertCount(3, $rows);
+        $this->assertSame(['No', 'NAMA ANGGOTA', 'NIM', 'TOTAL SAKIT', 'TOTAL IZIN', 'TOTAL ALFA', 'TOTAL HADIR'], $rows[0]);
+        $this->assertSame([1, 'Export Satu', 220011603, 1, 0, 0, 1], $rows[1]);
+        $this->assertSame([2, 'Export Dua', 220011604, 0, 0, 1, 0], $rows[2]);
+        @unlink(storage_path('app/private/'.$path));
+
+        // Filter search -> hanya satu anggota yang diexport
+        $path2 = 'rekap_test2.xlsx';
+        Excel::store(new RekapKehadiranExport('Export Dua', $start, $end), $path2, 'local', \Maatwebsite\Excel\Excel::XLSX);
+        $rows2 = IOFactory::load(storage_path('app/private/'.$path2))->getActiveSheet()->toArray(null, true, false);
+        $this->assertCount(2, $rows2);
+        $this->assertSame([1, 'Export Dua', 220011604, 0, 0, 1, 0], $rows2[1]);
+        @unlink(storage_path('app/private/'.$path2));
+    }
+
+    public function test_rekap_export_excel_and_pdf_download(): void
+    {
+        $this->actingAs($this->admin());
+        [$a1, $u1] = $this->anggotaUser('220011605', 'Pdf Satu');
+        $jadwal = Jadwal::create(['hari' => 'Senin', 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+        Absensi::create([
+            'anggota_id' => $a1->id,
+            'jadwal_id' => $jadwal->id,
+            'tanggal' => Carbon::now()->startOfMonth()->addDay()->toDateString(),
+            'status' => 'hadir',
+            'sumber' => 'scan',
+        ]);
+
+        Livewire::test(RekapKehadiran::class)
+            ->call('exportExcel')
+            ->assertFileDownloaded();
+
+        Livewire::test(RekapKehadiran::class)
+            ->call('exportPdf')
+            ->assertFileDownloaded();
+    }
+
+    public function test_settings_profil_save_and_logo_upload(): void
+    {
+        $this->actingAs($this->admin());
+        $logo = UploadedFile::fake()->image('logo.png', 100, 100);
+
+        Livewire::test(SettingsProfil::class)
+            ->set('namaUnit', 'UKM Taekwondo UAD')
+            ->set('namaUniversitas', 'Universitas Ahmad Dahlan')
+            ->set('alamat', 'Jl. Ringroad Selatan')
+            ->set('logoKiri', $logo)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $profil = PengaturanProfil::first();
+        $this->assertSame('UKM Taekwondo UAD', $profil->nama_unit_kegiatan);
+        $this->assertStringStartsWith('logos/unit-', $profil->logo_unit_kegiatan);
+        $this->assertFileExists(public_path($profil->logo_unit_kegiatan));
+
+        // Muat ulang komponen (simulasi refresh) -> data tetap ada
+        Livewire::test(SettingsProfil::class)
+            ->assertSet('namaUnit', 'UKM Taekwondo UAD')
+            ->assertSet('namaUniversitas', 'Universitas Ahmad Dahlan')
+            ->assertSet('alamat', 'Jl. Ringroad Selatan')
+            ->assertSet('existingLogoKiri', $profil->logo_unit_kegiatan);
+
+        if ($profil->logo_unit_kegiatan) {
+            \Illuminate\Support\Facades\File::delete(public_path($profil->logo_unit_kegiatan));
+        }
+    }
+
+    public function test_rekap_pdf_contains_letterhead(): void
+    {
+        $this->actingAs($this->admin());
+        PengaturanProfil::create([
+            'nama_unit_kegiatan' => 'UKM Taekwondo UAD',
+            'nama_universitas' => 'Universitas Ahmad Dahlan',
+            'alamat_sekretariat' => 'Jl. Ringroad Selatan',
+        ]);
+        $settings = PengaturanProfil::first();
+
+        $html = view('pdf.rekap-kehadiran', [
+            'anggota' => collect(),
+            'summary' => ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alfa' => 0],
+            'start' => '2026-08-01',
+            'end' => '2026-08-31',
+            'search' => '',
+            'settings' => $settings,
+        ])->render();
+
+        $this->assertStringContainsString('UNIT KEGIATAN MAHASISWA', $html);
+        $this->assertStringContainsString('UKM TAEKWONDO UAD', $html);
+        $this->assertStringContainsString('UNIVERSITAS AHMAD DAHLAN', $html);
+        $this->assertStringContainsString('Jl. Ringroad Selatan', $html);
+        $this->assertStringContainsString('kop-line', $html);
     }
 
     public function test_dashboard_shows_real_statistics(): void

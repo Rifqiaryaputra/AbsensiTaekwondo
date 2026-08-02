@@ -26,11 +26,15 @@ class AbsensiScanTest extends TestCase
     private function jadwalAktif(): Jadwal
     {
         $now = Carbon::now();
+        $start = $now->copy()->subHour()->format('H:i:s');
+        $end = $now->copy()->addHour()->format('H:i:s');
+        if ($now->copy()->subHour()->isYesterday()) { $start = '00:00:00'; }
+        if ($now->copy()->addHour()->isTomorrow()) { $end = '23:59:59'; }
 
         return Jadwal::create([
             'hari' => $this->hariIni(),
-            'jam_start' => $now->copy()->subHour()->format('H:i:s'),
-            'jam_close' => $now->copy()->addHour()->format('H:i:s'),
+            'jam_start' => $start,
+            'jam_close' => $end,
         ]);
     }
 
@@ -155,12 +159,7 @@ class AbsensiScanTest extends TestCase
         $component = Livewire::test(AbsensiScan::class);
         $component->assertSet('jadwalId', null);
 
-        $now = Carbon::now();
-        $jadwal = Jadwal::create([
-            'hari' => $this->hariIni(),
-            'jam_start' => $now->copy()->subHour()->format('H:i:s'),
-            'jam_close' => $now->copy()->addHour()->format('H:i:s'),
-        ]);
+        $jadwal = $this->jadwalAktif();
 
         $component->call('refreshJadwal');
         $component->assertSet('jadwalId', $jadwal->id);

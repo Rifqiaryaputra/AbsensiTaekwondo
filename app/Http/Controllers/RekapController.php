@@ -22,7 +22,11 @@ class RekapController extends Controller
         }
 
         return Excel::download(
-            new RekapKehadiranExport($start, $end),
+            new RekapKehadiranExport(
+                (string) request()->query('search', ''),
+                $start,
+                $end
+            ),
             'Rekap_Absensi_'.$start.'_sd_'.$end.'.xlsx'
         );
     }

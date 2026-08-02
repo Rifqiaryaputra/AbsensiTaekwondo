@@ -26,11 +26,15 @@ class AutoAlfaCommandTest extends TestCase
     private function jadwalSelesai(): Jadwal
     {
         $now = Carbon::now();
+        $start = $now->copy()->subMinutes(30)->format('H:i:s');
+        $close = $now->copy()->subMinute()->format('H:i:s');
+        if ($now->copy()->subMinutes(30)->isYesterday()) { $start = '00:00:00'; }
+        if ($now->copy()->subMinute()->isYesterday()) { $close = '00:00:00'; }
 
         return Jadwal::create([
             'hari' => $this->hariIni(),
-            'jam_start' => $now->copy()->subHours(3)->format('H:i:s'),
-            'jam_close' => $now->copy()->subHour()->format('H:i:s'),
+            'jam_start' => $start,
+            'jam_close' => $close,
         ]);
     }
 

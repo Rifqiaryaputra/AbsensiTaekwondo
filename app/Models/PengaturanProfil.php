@@ -21,6 +21,15 @@ class PengaturanProfil extends Model
 
     public static function instance(): self
     {
-        return self::query()->firstOrCreate(['id' => 1]);
+        // Selalu pakai baris pertama (singleton). Hanya buat id=1 bila tabel masih kosong.
+        $row = self::query()->first();
+
+        if (! $row) {
+            $row = new self;
+            $row->id = 1;
+            $row->save();
+        }
+
+        return $row;
     }
 }
