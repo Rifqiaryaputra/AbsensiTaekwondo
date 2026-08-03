@@ -44,7 +44,7 @@
                         setReaderHint('Mengaktifkan kamera...');
                         return html5QrCode.start(
                             { facingMode: 'environment' },
-                            { fps: 10, qrbox: { width: 220, height: 220 } },
+                            { fps: 10, qrbox: (width, height) => { const size = Math.min(width, height) * 0.8; return { width: size, height: size }; } },
                             onScanSuccess
                         );
                     })

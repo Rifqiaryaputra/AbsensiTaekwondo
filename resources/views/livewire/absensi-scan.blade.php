@@ -1,4 +1,11 @@
 <div wire:poll.5s="refreshJadwal">
+    <style>
+        /* Pastikan feed kamera memenuhi seluruh area scanner */
+        #qr-reader { position: relative; }
+        #qr-reader > div { width: 100% !important; height: 100% !important; }
+        #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; border-radius: 0.75rem; }
+    </style>
+
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8 items-start">
 
         <div class="xl:col-span-5 flex flex-col gap-5 md:gap-6 w-full">
@@ -11,6 +18,29 @@
                     <div>
                         <p class="font-bold text-brand-blue dark:text-blue-300 text-sm">Jadwal Aktif: {{ $jadwalInfo }}</p>
                         <p class="text-xs text-brand-blue/70 dark:text-blue-400/70 font-semibold mt-1">(Batas tutup absen: {{ $batasTutup }})</p>
+                    </div>
+                </div>
+            @elseif ($isLibur)
+                @php \Carbon\Carbon::setLocale('id'); @endphp
+                <div class="bg-red-50 dark:bg-red-900/20 rounded-2xl md:rounded-3xl p-4 md:p-5 flex items-start gap-4 border border-red-100 dark:border-red-900/30 transition-colors duration-300">
+                    <div class="w-10 h-10 shrink-0 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400">
+                        <span class="material-symbols-outlined text-[20px]">event_busy</span>
+                    </div>
+                    <div>
+                        <h3 class="text-red-700 dark:text-red-400 font-bold text-sm md:text-base">Pemberitahuan Libur</h3>
+                        <p class="text-red-600 dark:text-red-400/80 text-xs md:text-sm font-medium mt-1">
+                            Latihan ditiadakan pada <strong>{{ \Carbon\Carbon::parse($tanggalLibur)->translatedFormat('l, d F Y') }}</strong> ({{ $namaLibur ?: 'Libur' }}).
+                        </p>
+                    </div>
+                </div>
+            @elseif ($sesiMode === 'koreksi')
+                <div class="bg-brand-light dark:bg-brand-blue/20 rounded-2xl md:rounded-3xl p-4 md:p-5 flex items-center gap-4 border border-brand-blue/10 dark:border-brand-blue/30 transition-colors duration-300">
+                    <div class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-brand-blue dark:text-blue-400 shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined">update</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-brand-blue dark:text-blue-300 text-sm">Sesi Perbaikan Absen Dibuka</p>
+                        <p class="text-xs text-brand-blue/70 dark:text-blue-400/70 font-semibold mt-1">Koreksi status hanya tersedia pukul 12.00 - 13.00 WIB pada hari ini.</p>
                     </div>
                 </div>
             @else
@@ -31,9 +61,8 @@
 
             <!-- QR Scanner & Input Card -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-card flex flex-col gap-6 transition-colors duration-300">
-                <div class="bg-gray-900 rounded-2xl md:rounded-3xl relative overflow-hidden shadow-inner">
-                    <div id="qr-reader" wire:ignore class="w-full aspect-square [&_video]:rounded-2xl"></div>
-                    <p id="qr-reader-hint" class="text-center text-white/50 text-xs font-medium tracking-wider uppercase py-3">Arahkan QR Code anggota ke kamera...</p>
+                <div class="relative overflow-hidden rounded-2xl md:rounded-3xl">
+                    <div id="qr-reader" wire:ignore class="w-full aspect-square [&>div]:h-full [&>div]:w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"></div>
                 </div>
 
                 <!-- Manual Input Form -->
@@ -75,6 +104,15 @@
         </div>
 
         <div class="xl:col-span-7 bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-card flex flex-col border border-gray-50/50 dark:border-gray-700/50 transition-colors duration-300">
+            @if ($sesiMode === 'terkunci')
+                <div class="flex flex-col items-center justify-center flex-grow text-center py-12">
+                    <div class="w-14 h-14 rounded-2xl bg-brand-light dark:bg-brand-blue/20 flex items-center justify-center text-brand-blue dark:text-blue-400 mb-4">
+                        <span class="material-symbols-outlined">lock</span>
+                    </div>
+                    <p class="font-heading font-bold text-base text-gray-900 dark:text-white">Sesi perbaikan absen telah selesai dan data telah dikunci.</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-1">Daftar Hadir Sementara tidak dapat diubah lagi.</p>
+                </div>
+            @else
             <div class="flex items-center justify-between mb-6 md:mb-8">
                 <div>
                     <h3 class="font-heading font-bold text-base md:text-lg text-gray-900 dark:text-white">Daftar Hadir Sementara</h3>
@@ -104,11 +142,13 @@
                                     <x-status-badge :status="$record->status" />
                                 </td>
                                 <td class="px-4 py-4 text-center">
-                                    <button type="button" onclick="openEditStatusModal({{ $record->id }}, '{{ addslashes($record->anggota?->nama_lengkap ?? '') }}')"
-                                        class="w-8 h-8 mx-auto rounded-xl bg-transparent text-gray-400 dark:text-gray-400 flex items-center justify-center hover:bg-brand-light dark:hover:bg-gray-600 hover:text-brand-blue dark:hover:text-blue-400 transition-colors opacity-50 group-hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
-                                        title="Edit Status">
-                                        <span class="material-symbols-outlined text-[18px]">edit</span>
-                                    </button>
+                                    @if ($this->canEditAbsensi())
+                                        <button type="button" onclick="openEditStatusModal({{ $record->id }}, '{{ addslashes($record->anggota?->nama_lengkap ?? '') }}')"
+                                            class="w-8 h-8 mx-auto rounded-xl bg-transparent text-gray-400 dark:text-gray-400 flex items-center justify-center hover:bg-brand-light dark:hover:bg-gray-600 hover:text-brand-blue dark:hover:text-blue-400 transition-colors opacity-50 group-hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
+                                            title="Edit Status">
+                                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -121,9 +161,11 @@
                     </tbody>
                 </table>
             </div>
+            @endif
         </div>
     </div>
 
+    @if ($this->canEditAbsensi())
     <!-- Edit Status Modal -->
     <div id="editStatusModal" class="modal-overlay fixed inset-0 z-[60] flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-gray-900/40 dark:bg-gray-900/70 backdrop-blur-sm transition-opacity" onclick="closeModal('editStatusModal')"></div>
@@ -158,6 +200,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     @push('scripts')
         <script>

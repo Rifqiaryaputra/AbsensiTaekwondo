@@ -4,8 +4,11 @@ namespace App\Livewire;
 
 use App\Models\Absensi;
 use App\Models\Anggota;
+use App\Models\HariLibur;
+use App\Models\User;
 use App\Services\AbsensiService;
 use App\Services\JadwalService;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -24,6 +27,16 @@ class AbsensiScan extends Component
 
     public ?string $jadwalHariIniStatus = null;
 
+    public ?string $sesiTanggal = null;
+
+    public ?string $sesiMode = null;
+
+    public bool $isLibur = false;
+
+    public string $namaLibur = '';
+
+    public ?string $tanggalLibur = null;
+
     public Collection $records;
 
     public function mount(JadwalService $jadwalService): void
@@ -34,27 +47,78 @@ class AbsensiScan extends Component
     public function refreshJadwal(JadwalService $jadwalService): void
     {
         $now = now();
+        $holiday = HariLibur::query()->whereDate('tanggal', $now->toDateString())->first();
+
+        $this->isLibur = $holiday !== null;
+        $this->namaLibur = $holiday?->keterangan ?? '';
+        $this->tanggalLibur = $holiday?->tanggal?->toDateString() ?? null;
+
+        if ($holiday) {
+            $this->jadwalId = null;
+            $this->jadwalInfo = null;
+            $this->batasTutup = null;
+            $this->jadwalHariIniInfo = null;
+            $this->jadwalHariIniStatus = null;
+            $this->sesiTanggal = null;
+            $this->sesiMode = null;
+            $this->records = new Collection;
+
+            return;
+        }
+
         $jadwal = $jadwalService->getActiveJadwal($now);
 
         $this->jadwalId = $jadwal?->id;
+        $this->jadwalInfo = null;
+        $this->batasTutup = null;
+        $this->jadwalHariIniInfo = null;
+        $this->jadwalHariIniStatus = null;
+        $this->sesiTanggal = null;
+        $this->sesiMode = null;
 
         if ($jadwal) {
             $this->jadwalInfo = "Latihan Rutin {$jadwal->hari} | {$jadwal->jam_start} - {$jadwal->jam_close} WIB";
             $this->batasTutup = "{$jadwal->jam_close} WIB";
+            $this->sesiTanggal = $now->toDateString();
+            $this->sesiMode = 'live';
+
+            $this->loadRecords();
+
+            return;
+        }
+
+        $kemarin = $now->copy()->subDay();
+        $sesiKemarinAda = Absensi::query()->whereDate('tanggal', $kemarin->toDateString())->exists()
+            || $jadwalService->getJadwalUntukTanggal($kemarin) !== null;
+
+        if ($sesiKemarinAda) {
+            $windowEnd = $kemarin->copy()->addDay()->setHour(13)->setMinute(0);
+
+            if ($now->lessThan($windowEnd)) {
+                $this->sesiTanggal = $kemarin->toDateString();
+                $this->sesiMode = 'koreksi';
+
+                $this->loadRecords();
+
+                return;
+            }
+
+            if (! $jadwalService->getJadwalUntukTanggal($now)) {
+                $this->sesiMode = 'terkunci';
+                $this->loadRecords();
+
+                return;
+            }
+        }
+
+        $jadwalHariIni = $jadwalService->getJadwalUntukTanggal($now);
+        if ($jadwalHariIni) {
+            $this->jadwalHariIniInfo = "{$jadwalHariIni->hari} ({$jadwalHariIni->jam_start} - {$jadwalHariIni->jam_close} WIB)";
+            $this->jadwalHariIniStatus = $now->toTimeString() < $jadwalHariIni->jam_start ? 'belum dibuka' : 'sudah ditutup';
+            $this->sesiTanggal = $now->toDateString();
+        } else {
             $this->jadwalHariIniInfo = null;
             $this->jadwalHariIniStatus = null;
-        } else {
-            $this->jadwalInfo = null;
-            $this->batasTutup = null;
-
-            $jadwalHariIni = $jadwalService->getJadwalUntukTanggal($now);
-            if ($jadwalHariIni) {
-                $this->jadwalHariIniInfo = "{$jadwalHariIni->hari} ({$jadwalHariIni->jam_start} - {$jadwalHariIni->jam_close} WIB)";
-                $this->jadwalHariIniStatus = $now->toTimeString() < $jadwalHariIni->jam_start ? 'belum dibuka' : 'sudah ditutup';
-            } else {
-                $this->jadwalHariIniInfo = null;
-                $this->jadwalHariIniStatus = null;
-            }
         }
 
         $this->loadRecords();
@@ -65,10 +129,30 @@ class AbsensiScan extends Component
         $this->records = Absensi::query()
             ->with('anggota')
             ->when($this->jadwalId, fn ($q) => $q->where('jadwal_id', $this->jadwalId))
-            ->whereDate('tanggal', now()->toDateString())
+            ->whereDate('tanggal', $this->sesiTanggal ?? now()->toDateString())
             ->orderByDesc('waktu_scan')
             ->orderByDesc('id')
             ->get();
+    }
+
+    public function canEditAbsensi(): bool
+    {
+        $user = auth()->user();
+        $isAuthorizedRole = $user && in_array($user->role, [User::ROLE_ADMIN, User::ROLE_PETUGAS], true);
+
+        if (! $isAuthorizedRole || ! $this->sesiTanggal) {
+            return false;
+        }
+
+        $now = now();
+        $jadwalDate = Carbon::parse($this->sesiTanggal);
+        $nextDay = $jadwalDate->copy()->addDay()->startOfDay();
+
+        // Jendela koreksi: besok pukul 12:00 - 13:00.
+        $windowStart = $nextDay->copy()->setHour(12)->setMinute(0);
+        $windowEnd = $nextDay->copy()->setHour(13)->setMinute(0);
+
+        return $now->between($windowStart, $windowEnd);
     }
 
     public function processManualInput(AbsensiService $service): void
@@ -120,6 +204,10 @@ class AbsensiScan extends Component
     #[On('changeStatus')]
     public function updateStatus(int $absensiId, string $status, AbsensiService $service): void
     {
+        if (! $this->canEditAbsensi()) {
+            abort(403, 'Sesi perbaikan absen belum dibuka atau sudah ditutup.');
+        }
+
         $absensi = Absensi::find($absensiId);
 
         if (! $absensi) {

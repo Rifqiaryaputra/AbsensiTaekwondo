@@ -12,6 +12,14 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'Sistem Absensi UKM Taekwondo') }}</title>
 
+    @php
+        $pengaturan = \App\Models\PengaturanProfil::instance();
+        $faviconPath = $pengaturan->logo_unit_kegiatan && file_exists(public_path($pengaturan->logo_unit_kegiatan))
+            ? asset($pengaturan->logo_unit_kegiatan)
+            : null;
+    @endphp
+    <link rel="icon" href="{{ $faviconPath ?: asset('favicon.ico') }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 

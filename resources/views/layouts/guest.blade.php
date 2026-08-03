@@ -5,6 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        @php
+            $pengaturan = \App\Models\PengaturanProfil::instance();
+            $faviconPath = $pengaturan->logo_unit_kegiatan && file_exists(public_path($pengaturan->logo_unit_kegiatan))
+                ? asset($pengaturan->logo_unit_kegiatan)
+                : null;
+        @endphp
+        <link rel="icon" href="{{ $faviconPath ?: asset('favicon.ico') }}">
+
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
