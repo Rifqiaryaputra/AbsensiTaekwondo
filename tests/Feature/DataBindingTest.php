@@ -189,15 +189,55 @@ class DataBindingTest extends TestCase
             ->assertSeeHtml('value="'.$petugas->id.'" checked');
     }
 
-    public function test_dashboard_export_laporan_is_real_link(): void
+    public function test_dashboard_export_laporan_wired(): void
     {
         $this->actingAs($this->admin());
         $response = $this->get(route('dashboard'));
 
         $response->assertOk();
         $response->assertSee('Export Laporan');
-        $response->assertSee('/rekap/export?', false);
+        $response->assertSee('wire:click="exportLaporan"', false);
         $response->assertDontSee('Export laporan tersedia pada fase backend');
+    }
+
+    public function test_dashboard_export_laporan_download(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(DashboardStats::class)
+            ->call('exportLaporan')
+            ->assertFileDownloaded();
+    }
+
+    public function test_laporan_dashboard_pdf_view_content(): void
+    {
+        $this->actingAs($this->admin());
+        PengaturanProfil::create([
+            'nama_unit_kegiatan' => 'UKM Taekwondo UAD',
+            'nama_universitas' => 'Universitas Ahmad Dahlan',
+            'alamat_sekretariat' => 'Jl. Ringroad Selatan',
+        ]);
+        $settings = PengaturanProfil::first();
+
+        $html = view('pdf.laporan-dashboard', [
+            'settings' => $settings,
+            'start' => Carbon::now()->startOfMonth(),
+            'end' => Carbon::now()->endOfMonth(),
+            'totalLatihan' => 8,
+            'totalLibur' => 2,
+            'topTerajin' => [],
+            'topAlfa' => [],
+            'bulanLabel' => 'Agustus 2026',
+        ])->render();
+
+        $this->assertStringContainsString('UNIT KEGIATAN MAHASISWA', $html);
+        $this->assertStringContainsString('Laporan Statistik Absensi Bulanan', $html);
+        $this->assertStringContainsString('Agustus 2026', $html);
+        $this->assertStringContainsString('Total Hari Latihan', $html);
+        $this->assertStringContainsString('8 sesi', $html);
+        $this->assertStringContainsString('Total Hari Libur', $html);
+        $this->assertStringContainsString('Anggota Terajin (Top 3)', $html);
+        $this->assertStringContainsString('Paling Sering Alfa (Top 5)', $html);
     }
 
     public function test_daftar_anggota_edit_hydrates_form(): void
@@ -611,6 +651,125 @@ class DataBindingTest extends TestCase
         $this->assertStringContainsString('UNIVERSITAS AHMAD DAHLAN', $html);
         $this->assertStringContainsString('Jl. Ringroad Selatan', $html);
         $this->assertStringContainsString('kop-line', $html);
+    }
+
+    public function test_total_latihan_excludes_holidays(): void
+    {
+        $this->actingAs($this->admin());
+        $svc = app(\App\Services\JadwalService::class);
+        $start = Carbon::now()->startOfMonth();
+        $end = Carbon::now()->endOfMonth();
+
+        $jadwalHari = $svc->hariNama($start);
+        Jadwal::create(['hari' => $jadwalHari, 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+
+        $totalOcc = 0;
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            if ($svc->hariNama($cursor) === $jadwalHari) {
+                $totalOcc++;
+            }
+            $cursor->addDay();
+        }
+
+        $comp = new DashboardStats;
+        $this->assertSame($totalOcc, $comp->totalLatihanBulanIni($start, $end));
+
+        // +7 hari = hari yang sama; jadikan hari libur -> sesi itu tidak dihitung
+        HariLibur::create(['tanggal' => $start->copy()->addDays(7)->toDateString(), 'keterangan' => 'Uji Libur']);
+        $this->assertSame($totalOcc - 1, $comp->totalLatihanBulanIni($start, $end));
+    }
+
+    public function test_dashboard_chart_data_has_four_series(): void
+    {
+        $this->actingAs($this->admin());
+        [$a1, $u1] = $this->anggotaUser('220011610', 'Chart Satu');
+        $jadwal = Jadwal::create(['hari' => 'Senin', 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+        $today = Carbon::now();
+        Absensi::create([
+            'anggota_id' => $a1->id,
+            'jadwal_id' => $jadwal->id,
+            'tanggal' => $today->toDateString(),
+            'status' => 'hadir',
+            'sumber' => 'scan',
+        ]);
+
+        $comp = new DashboardStats;
+        $comp->bulan = now()->format('Y-m');
+        $data = $comp->chartData();
+
+        $this->assertCount(4, $data['datasets']);
+        $this->assertSame(['Hadir', 'Izin', 'Sakit', 'Alfa'], array_column($data['datasets'], 'label'));
+        $this->assertSame('#22c55e', $data['datasets'][0]['backgroundColor']);
+        $this->assertSame('#3b82f6', $data['datasets'][1]['backgroundColor']);
+        $this->assertSame('#eab308', $data['datasets'][2]['backgroundColor']);
+        $this->assertSame('#ef4444', $data['datasets'][3]['backgroundColor']);
+
+        // Label sumbu-X terformat "Sen, 3 Agu"
+        \Carbon\Carbon::setLocale('id');
+        $shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $label = $today->translatedFormat('D, j').' '.$shortMonths[$today->month - 1];
+        $idx = array_search($label, $data['labels']);
+        $this->assertNotFalse($idx);
+        $this->assertGreaterThanOrEqual(1, $data['datasets'][0]['data'][$idx]);
+    }
+
+    public function test_bulan_options_dynamic_from_earliest_data(): void
+    {
+        $this->actingAs($this->admin());
+
+        // Tanpa data -> hanya bulan berjalan
+        $comp = new DashboardStats;
+        $this->assertSame([now()->format('Y-m')], array_keys($comp->bulanOptions()));
+
+        // Tambah absensi 2 bulan lalu -> opsi mulai dari bulan tsb
+        $bulan2 = now()->copy()->subMonths(2)->startOfMonth();
+        [$a, $u] = $this->anggotaUser('220011620', 'Bulan Test');
+        $jadwal = Jadwal::create(['hari' => 'Senin', 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+        Absensi::create([
+            'anggota_id' => $a->id,
+            'jadwal_id' => $jadwal->id,
+            'tanggal' => $bulan2->toDateString(),
+            'status' => 'hadir',
+            'sumber' => 'scan',
+        ]);
+
+        $keys = array_keys($comp->bulanOptions());
+        $this->assertSame($bulan2->format('Y-m'), $keys[0]);
+        $this->assertSame(now()->format('Y-m'), $keys[array_key_last($keys)]);
+    }
+
+    public function test_dashboard_top3_aktif_and_alfa_with_foto(): void
+    {
+        $this->actingAs($this->admin());
+        $jadwal = Jadwal::create(['hari' => 'Senin', 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+        $base = Carbon::now()->startOfMonth();
+
+        for ($i = 1; $i <= 4; $i++) {
+            [$a, $u] = $this->anggotaUser('2200116'.str_pad((string) $i, 2, '0', STR_PAD_LEFT), 'Top '.$i);
+            if ($i === 1) {
+                $a->update(['foto_dobok' => 'dobok-photos/test-1.jpg']);
+                $days = [1, 2, 3];
+            } else {
+                $days = [$i, $i + 10];
+            }
+            foreach ($days as $d) {
+                Absensi::create([
+                    'anggota_id' => $a->id,
+                    'jadwal_id' => $jadwal->id,
+                    'tanggal' => $base->copy()->addDays($d)->toDateString(),
+                    'status' => 'hadir',
+                    'sumber' => 'scan',
+                ]);
+            }
+        }
+
+        $comp = new DashboardStats;
+        $comp->refresh();
+
+        $this->assertCount(3, $comp->anggotaAktif);
+        $this->assertLessThanOrEqual(3, count($comp->seringAlfa));
+        $this->assertSame('dobok-photos/test-1.jpg', $comp->anggotaAktif[0]['foto']);
     }
 
     public function test_dashboard_shows_real_statistics(): void
