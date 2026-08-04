@@ -50,7 +50,7 @@
                     </div>
                 </div>
 
-                <p id="error_msg" class="text-xs text-red-500 dark:text-red-400 font-medium hidden flex items-center gap-1.5 mt-2 transition-colors">
+                <p id="error_msg" class="text-xs text-red-500 dark:text-red-400 font-medium hidden items-center gap-1.5 mt-2 transition-colors">
                     <span class="material-symbols-outlined text-[16px]">error</span>
                     Kata sandi baru dan konfirmasi tidak cocok.
                 </p>
