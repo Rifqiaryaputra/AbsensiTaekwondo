@@ -29,6 +29,7 @@ class PengajuanIzin extends Component
 
     public function updatedTanggal(JadwalService $service): void
     {
+        $this->resetValidation('tanggal');
         $this->resolveJadwalInfo($service);
     }
 
@@ -70,7 +71,7 @@ class PengajuanIzin extends Component
 
         $tanggal = Carbon::parse($this->tanggal);
 
-        if ($tanggal->isPast()) {
+        if ($tanggal->isBefore(Carbon::today())) {
             $this->dispatch('toast', title: 'Gagal', message: 'Tanggal pengajuan tidak boleh di masa lalu.', type: 'error');
 
             return;
@@ -93,7 +94,24 @@ class PengajuanIzin extends Component
         // IZIN-2: tolak bila diajukan kurang dari 2 jam sebelum jam start.
         $batas = $service->batasPengajuan($jadwal, $tanggal);
         if (now()->greaterThan($batas)) {
-            $this->dispatch('toast', title: 'Ditolak', message: 'Pengajuan harus diajukan minimal 2 jam sebelum jam mulai absen (batas: '.$batas->format('d M Y H:i').').', type: 'error');
+            $this->addError('tanggal', 'Batas waktu pengajuan maksimal 2 jam sebelum latihan.');
+            $this->dispatch('toast', title: 'Ditolak', message: 'Batas waktu pengajuan telah habis. Maksimal 2 jam sebelum latihan dimulai.', type: 'error');
+
+            return;
+        }
+
+        // QUOTA-1: maksimal 5 pengajuan izin/sakit per bulan kalender (selain yang dibatalkan).
+        $kuotaBulan = IzinSakit::query()
+            ->where('anggota_id', $anggota->id)
+            ->whereIn('jenis', [IzinSakit::JENIS_IZIN, IzinSakit::JENIS_SAKIT])
+            ->whereMonth('tanggal', $tanggal->month)
+            ->whereYear('tanggal', $tanggal->year)
+            ->where('status', '!=', IzinSakit::STATUS_DIBATALKAN)
+            ->count();
+
+        if ($kuotaBulan >= 5) {
+            $this->addError('tanggal', 'Kuota izin/sakit bulan ini telah habis (Maks. 5 kali).');
+            $this->dispatch('toast', title: 'Ditolak', message: 'Kuota izin/sakit bulan ini telah habis (Maks. 5 kali per bulan).', type: 'error');
 
             return;
         }
@@ -118,9 +136,11 @@ class PengajuanIzin extends Component
             'diajukan_pada' => now(),
         ]);
 
+        $jenis = $this->jenis;
+
         $this->showForm = false;
         $this->resetForm();
-        $this->dispatch('toast', title: 'Berhasil', message: 'Pengajuan '.ucfirst($this->jenis).' berhasil dikirim.', type: 'success');
+        $this->dispatch('toast', title: 'Berhasil', message: 'Pengajuan '.ucfirst($jenis).' berhasil dikirim.', type: 'success');
     }
 
     public function batalkan(int $id): void
@@ -137,6 +157,7 @@ class PengajuanIzin extends Component
     {
         $this->showForm = $show;
         if ($show) {
+            $this->resetValidation();
             $this->resetForm();
             $this->resolveJadwalInfo(app(JadwalService::class));
         }
@@ -151,7 +172,12 @@ class PengajuanIzin extends Component
 
     public function pengajuanList()
     {
-        return $this->pengajuanQuery()->get();
+        // Tampilkan maks. 3 pengajuan terbaru, dan sembunyikan sesi yang sudah
+        // berumur lebih dari 1 hari (H+1) dari tanggal jadwal.
+        return $this->pengajuanQuery()
+            ->where('tanggal', '>=', now()->subDay()->toDateString())
+            ->limit(3)
+            ->get();
     }
 
     private function resetForm(): void

@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absensi;
+use App\Models\HariLibur;
+use App\Models\Jadwal;
 use Illuminate\Support\Carbon;
 
 class AnggotaDashboardController extends Controller
 {
     public function index()
     {
+        Carbon::setLocale('id');
+
         $user = auth()->user();
         $anggotaModel = $user?->anggota;
 
@@ -22,30 +26,67 @@ class AnggotaDashboardController extends Controller
                 'inisial' => strtoupper(mb_substr($anggotaModel->nama_lengkap, 0, 1)),
             ]
             : [
-                'nama' => 'Budi Santoso',
-                'id_anggota' => 'TKD25-013',
-                'no_bpjs' => '26014267913',
+                'nama' => 'Anggota',
+                'id_anggota' => '-',
+                'no_bpjs' => '-',
                 'foto' => null,
                 'qr_code' => null,
-                'inisial' => 'BS',
+                'inisial' => '?',
             ];
 
         [$statistik, $riwayat, $bulanList] = $this->rekapPresensi($anggotaModel?->id);
 
-        $liburTerdekat = [
-            'tanggal' => 'Senin, 17 Agustus 2026',
-            'keterangan' => 'Kemerdekaan RI',
-        ];
+        $liburTerdekat = HariLibur::query()
+            ->whereDate('tanggal', '>=', Carbon::today()->toDateString())
+            ->orderBy('tanggal')
+            ->first();
 
-        $jadwalTerdekat = [
-            'tanggal' => 'Jumat, 31 Jul 2026',
-            'jam' => '15:30 WIB',
-            'lokasi' => 'Lap. Utama',
-        ];
+        $liburTerdekat = $liburTerdekat
+            ? [
+                'tanggal' => Carbon::parse($liburTerdekat->tanggal)->translatedFormat('l, d F Y'),
+                'keterangan' => $liburTerdekat->keterangan,
+            ]
+            : null;
+
+        $jadwalTerdekat = $this->jadwalTerdekat();
 
         $bulanTerpilih = array_key_first($bulanList) ?? '';
 
         return view('anggota.dashboard', compact('anggota', 'statistik', 'liburTerdekat', 'jadwalTerdekat', 'riwayat', 'bulanList', 'bulanTerpilih'));
+    }
+
+    /**
+     * Sesi latihan berikutnya berdasarkan jadwal mingguan (hari + jam terdekat dari hari ini).
+     */
+    private function jadwalTerdekat(): ?array
+    {
+        $hariKe = [
+            'Minggu' => 0,
+            'Senin' => 1,
+            'Selasa' => 2,
+            'Rabu' => 3,
+            'Kamis' => 4,
+            'Jumat' => 5,
+            'Sabtu' => 6,
+        ];
+
+        $today = Carbon::today();
+        $terdekat = null;
+        $result = null;
+
+        foreach (Jadwal::query()->orderBy('jam_start')->get() as $jadwal) {
+            $next = $today->copy()->next((int) $hariKe[$jadwal->hari]);
+
+            if ($terdekat === null || $next->lt($terdekat)) {
+                $terdekat = $next;
+                $result = [
+                    'tanggal' => $next->translatedFormat('l, d F Y'),
+                    'jam' => $jadwal->jam_start.' WIB',
+                ];
+            }
+        }
+
+        return $result;
     }
 
     /**

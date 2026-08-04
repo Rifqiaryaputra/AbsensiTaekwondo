@@ -1,25 +1,42 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+    <!-- Mobile brand header -->
+    <div class="lg:hidden flex items-center gap-3 mb-8">
+        <x-application-logo class="w-10 h-10 text-brand-blue" />
+        <div>
+            <p class="font-heading font-bold text-gray-900 leading-tight">UKM Taekwondo</p>
+            <p class="text-xs text-gray-500">Sistem Absensi Mahasiswa</p>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h1 class="font-heading font-bold text-3xl text-gray-900">Lupa Kata Sandi?</h1>
+        <p class="text-gray-500 mt-2">Jangan khawatir! Masukkan email Anda, kami akan mengirimkan tautan untuk mengatur ulang kata sandi.</p>
     </div>
 
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form method="POST" action="{{ route('password.email') }}">
+    <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
         @csrf
 
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
+            <x-text-input id="email" class="block mt-1.5 w-full" type="email" name="email" :value="old('email')" required autofocus placeholder="nama@contoh.com" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
-        </div>
+        <x-primary-button class="w-full">
+            {{ __('Kirim Tautan Reset') }}
+        </x-primary-button>
+
+        <p class="text-center text-sm text-gray-500">
+            <a href="{{ route('login') }}" class="inline-flex items-center gap-1.5 font-semibold text-brand-blue hover:text-brand-hover transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"></path>
+                </svg>
+                {{ __('Kembali ke halaman masuk') }}
+            </a>
+        </p>
     </form>
 </x-guest-layout>

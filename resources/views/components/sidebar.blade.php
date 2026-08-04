@@ -30,6 +30,7 @@
 @endphp
 
 <aside id="sidebar"
+    x-data="{ showLogoutModal: false }"
     class="sidebar-menu fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-gray-800 flex-col p-6 z-50 shadow-[1px_0_15px_rgba(0,0,0,0.03)] dark:shadow-none border-r border-gray-100 dark:border-gray-700 md:translate-x-0 flex hidden md:flex transition-colors duration-300">
 
     <!-- Brand Header -->
@@ -72,12 +73,32 @@
             <span class="material-symbols-outlined text-[20px]" id="darkModeIcon">dark_mode</span>
             <span class="text-sm" id="darkModeText">Dark Mode</span>
         </button>
-        <form method="POST" action="{{ route('logout') }}">
+        <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
             @csrf
-            <button type="submit" class="w-full flex items-center gap-3 px-4 py-3.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-2xl font-medium focus:outline-none">
-                <span class="material-symbols-outlined text-[20px]">logout</span>
-                <span class="text-sm">Logout</span>
-            </button>
         </form>
+        <button type="button" x-on:click.prevent="showLogoutModal = true" class="w-full flex items-center gap-3 px-4 py-3.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-2xl font-medium focus:outline-none">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+            <span class="text-sm">Logout</span>
+        </button>
     </div>
+
+    <!-- Konfirmasi Logout -->
+    <template x-teleport="body">
+        <div x-cloak x-show="showLogoutModal" x-transition.opacity.scale.origin.center.duration.200ms
+            class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[70]">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl p-6 md:p-8 max-w-sm w-full mx-4 text-center shadow-xl">
+            <div class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Konfirmasi Keluar?</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-8">Apakah Anda yakin ingin keluar dari sistem? Anda harus login kembali untuk masuk.</p>
+            <div class="flex items-center gap-3 w-full">
+                <button type="button" x-on:click="showLogoutModal = false" class="flex-1 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold py-3 px-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition duration-200 focus:outline-none">Batal</button>
+                <button type="button" x-on:click="document.getElementById('logout-form').submit();" class="flex-1 bg-red-500 text-white font-semibold py-3 px-4 rounded-xl hover:bg-red-600 transition duration-200 focus:outline-none">Ya, Keluar</button>
+            </div>
+            </div>
+        </div>
+    </template>
 </aside>

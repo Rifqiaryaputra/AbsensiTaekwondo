@@ -68,6 +68,9 @@
                         @if ($batasInfo)
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Batas akhir pengajuan: <strong class="text-gray-700 dark:text-gray-300">{{ $batasInfo }}</strong></p>
                         @endif
+                        @error('tanggal')
+                            <p class="text-xs text-red-500 dark:text-red-400 font-semibold mt-1.5">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
@@ -114,7 +117,7 @@
 
             <div class="p-5 border-t border-gray-50 dark:border-gray-700 flex gap-3 bg-white dark:bg-gray-800 transition-colors">
                 <button type="button" wire:click="toggleForm(false)" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none">Batal</button>
-                <button type="submit" wire:click="save" class="flex-1 py-3 px-4 rounded-xl bg-brand-blue text-white text-sm font-bold hover:bg-brand-hover transition-colors shadow-md shadow-brand-blue/20 focus:outline-none">Kirim Pengajuan</button>
+                <button type="button" wire:click="save" class="flex-1 py-3 px-4 rounded-xl bg-brand-blue text-white text-sm font-bold hover:bg-brand-hover transition-colors shadow-md shadow-brand-blue/20 focus:outline-none">Kirim Pengajuan</button>
             </div>
         </div>
     </div>

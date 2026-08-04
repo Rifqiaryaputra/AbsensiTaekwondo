@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\PengajuanIzin;
-use App\Models\Absensi;
 use App\Models\Anggota;
 use App\Models\IzinSakit;
 use App\Models\Jadwal;
@@ -109,7 +108,9 @@ class PerizinanFlowTest extends TestCase
             ->set('tanggal', $now->toDateString())
             ->set('jenis', 'izin')
             ->set('keterangan', 'Mendadak')
-            ->call('save');
+            ->call('save')
+            ->assertHasErrors('tanggal')
+            ->assertDispatched('toast', title: 'Ditolak');
 
         $this->assertDatabaseCount('izin_sakit', 0);
     }
@@ -139,5 +140,147 @@ class PerizinanFlowTest extends TestCase
             'jenis' => 'izin',
             'status' => 'menunggu',
         ]);
+    }
+
+    public function test_pengajuan_allowed_for_today_within_window(): void
+    {
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        $now = Carbon::now();
+        $jadwal = Jadwal::create([
+            'hari' => $this->hariNama($now),
+            'jam_start' => $now->copy()->addHours(3)->format('H:i:s'),
+            'jam_close' => $now->copy()->addHours(5)->format('H:i:s'),
+        ]);
+
+        Livewire::test(PengajuanIzin::class)
+            ->set('tanggal', $now->toDateString())
+            ->set('jenis', 'sakit')
+            ->set('keterangan', 'Demam')
+            ->call('save');
+
+        $this->assertDatabaseHas('izin_sakit', [
+            'anggota_id' => $anggota->id,
+            'jadwal_id' => $jadwal->id,
+            'tanggal' => $now->format('Y-m-d 00:00:00'),
+            'jenis' => 'sakit',
+            'status' => 'menunggu',
+        ]);
+    }
+
+    public function test_toggle_form_opens_modal(): void
+    {
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        Livewire::test(PengajuanIzin::class)
+            ->call('toggleForm', true)
+            ->assertSet('showForm', true)
+            ->assertSee('Formulir Pengajuan')
+            ->call('toggleForm', false)
+            ->assertSet('showForm', false);
+    }
+
+    private function createIzin(Anggota $anggota, Jadwal $jadwal, string $tanggal, string $jenis = 'izin'): IzinSakit
+    {
+        return IzinSakit::create([
+            'anggota_id' => $anggota->id,
+            'jadwal_id' => $jadwal->id,
+            'tanggal' => $tanggal,
+            'jenis' => $jenis,
+            'keterangan' => 'uji',
+            'status' => 'menunggu',
+            'diajukan_pada' => now(),
+        ]);
+    }
+
+    public function test_pengajuan_list_hides_old_and_limits_to_3(): void
+    {
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        $jadwal = Jadwal::create(['hari' => $this->hariNama(Carbon::now()), 'jam_start' => '16:00:00', 'jam_close' => '18:00:00']);
+
+        $today = Carbon::now()->toDateString();
+        $old = Carbon::now()->subDays(3)->toDateString();
+
+        $this->createIzin($anggota, $jadwal, $today, 'izin');
+        $this->createIzin($anggota, $jadwal, $today, 'izin');
+        $this->createIzin($anggota, $jadwal, $today, 'izin');
+        $this->createIzin($anggota, $jadwal, $today, 'izin');
+        $this->createIzin($anggota, $jadwal, $old, 'sakit');
+
+        $list = (new PengajuanIzin)->pengajuanList();
+
+        $this->assertCount(3, $list);
+        $this->assertFalse($list->pluck('tanggal')->contains(Carbon::parse($old)));
+    }
+
+    public function test_pengajuan_allowed_at_monthly_quota_five(): void
+    {
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        $now = Carbon::now();
+        $jadwal = Jadwal::create([
+            'hari' => $this->hariNama($now),
+            'jam_start' => $now->copy()->addHours(3)->format('H:i:s'),
+            'jam_close' => $now->copy()->addHours(5)->format('H:i:s'),
+        ]);
+
+        foreach (range(1, 4) as $i) {
+            $this->createIzin($anggota, $jadwal, $now->toDateString(), $i % 2 === 0 ? 'izin' : 'sakit');
+        }
+
+        Livewire::test(PengajuanIzin::class)
+            ->set('tanggal', $now->toDateString())
+            ->set('jenis', 'izin')
+            ->set('keterangan', 'Kelima')
+            ->call('save')
+            ->assertHasNoErrors('tanggal');
+
+        $this->assertDatabaseCount('izin_sakit', 5);
+    }
+
+    public function test_pengajuan_rejected_when_monthly_quota_exceeded(): void
+    {
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        $now = Carbon::now();
+        $jadwal = Jadwal::create([
+            'hari' => $this->hariNama($now),
+            'jam_start' => $now->copy()->addHours(3)->format('H:i:s'),
+            'jam_close' => $now->copy()->addHours(5)->format('H:i:s'),
+        ]);
+
+        foreach (range(1, 5) as $i) {
+            $this->createIzin($anggota, $jadwal, $now->toDateString(), $i % 2 === 0 ? 'izin' : 'sakit');
+        }
+
+        Livewire::test(PengajuanIzin::class)
+            ->set('tanggal', $now->toDateString())
+            ->set('jenis', 'sakit')
+            ->set('keterangan', 'Keenam')
+            ->call('save')
+            ->assertHasErrors('tanggal')
+            ->assertDispatched('toast', title: 'Ditolak');
+
+        $this->assertDatabaseCount('izin_sakit', 5);
+    }
+
+    public function test_pengajuan_rejected_for_past_date(): void
+    {
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        Livewire::test(PengajuanIzin::class)
+            ->set('tanggal', Carbon::yesterday()->toDateString())
+            ->set('jenis', 'izin')
+            ->set('keterangan', 'Kemarin sakit')
+            ->call('save');
+
+        $this->assertDatabaseCount('izin_sakit', 0);
     }
 }

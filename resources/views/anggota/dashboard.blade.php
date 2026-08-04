@@ -63,7 +63,7 @@
                 <div class="mb-5 flex justify-between items-center">
                     <div>
                         <h2 class="font-heading font-bold text-lg text-gray-900 dark:text-white">Statistik Kehadiran</h2>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">Semester Ganjil 2026</p>
+                        {{-- <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">Semester Ganjil 2026</p> --}}
                     </div>
                     <span class="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-bold px-3 py-1 rounded-full transition-colors">{{ $statistik['total_sesi'] }} Sesi</span>
                 </div>
@@ -91,31 +91,34 @@
             <!-- Kanan: Jadwal & Action -->
             <div class="flex flex-col gap-4">
                 <!-- Banner Pemberitahuan Libur -->
-                <div class="bg-red-50 dark:bg-red-900/20 rounded-3xl p-5 border border-red-100 dark:border-red-900/50 flex gap-4 items-center shadow-sm relative overflow-hidden animate-[fadeIn_0.3s_ease-in-out] transition-colors">
-                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 transition-colors">
-                        <span class="material-symbols-outlined text-[22px]">event_busy</span>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-red-700 dark:text-red-400 text-sm transition-colors">Pemberitahuan Libur</h3>
-                        <p class="text-xs text-red-600/80 dark:text-red-300 font-medium mt-1 transition-colors">Latihan ditiadakan pada <strong class="text-red-700 dark:text-red-400">{{ $liburTerdekat['tanggal'] }}</strong> ({{ $liburTerdekat['keterangan'] }}).</p>
-                    </div>
-                </div>
-
-                <!-- Banner Jadwal Terdekat -->
-                <div class="bg-brand-blue dark:bg-brand-hover rounded-3xl p-6 text-white shadow-lg shadow-brand-blue/30 flex items-center gap-5 relative overflow-hidden transition-colors">
-                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-                    <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl border border-white/20 flex items-center justify-center shrink-0 bg-white/10 backdrop-blur-md z-10">
-                        <span class="material-symbols-outlined text-[28px]">notifications_active</span>
-                    </div>
-                    <div class="flex-1 min-w-0 z-10">
-                        <h3 class="font-semibold text-blue-100 text-[11px] md:text-xs tracking-wider uppercase mb-0.5">Jadwal Latihan Terdekat</h3>
-                        <p class="font-heading font-bold text-lg md:text-xl truncate leading-tight mt-1">{{ $jadwalTerdekat['tanggal'] }}</p>
-                        <div class="flex flex-wrap items-center gap-3 mt-2">
-                            <span class="text-[11px] bg-white/20 px-2 py-1 rounded-md font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> {{ $jadwalTerdekat['jam'] }}</span>
-                            <span class="text-[11px] bg-white/20 px-2 py-1 rounded-md font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">location_on</span> {{ $jadwalTerdekat['lokasi'] }}</span>
+                @if ($liburTerdekat)
+                    <div class="bg-red-50 dark:bg-red-900/20 rounded-3xl p-5 border border-red-100 dark:border-red-900/50 flex gap-4 items-center shadow-sm relative overflow-hidden animate-[fadeIn_0.3s_ease-in-out] transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 transition-colors">
+                            <span class="material-symbols-outlined text-[22px]">event_busy</span>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-red-700 dark:text-red-400 text-sm transition-colors">Pemberitahuan Libur</h3>
+                            <p class="text-xs text-red-600/80 dark:text-red-300 font-medium mt-1 transition-colors">Latihan ditiadakan pada <strong class="text-red-700 dark:text-red-400">{{ $liburTerdekat['tanggal'] }}</strong> ({{ $liburTerdekat['keterangan'] }}).</p>
                         </div>
                     </div>
-                </div>
+                @endif
+
+                <!-- Banner Jadwal Terdekat -->
+                @if ($jadwalTerdekat)
+                    <div class="bg-brand-blue dark:bg-brand-hover rounded-3xl p-6 text-white shadow-lg shadow-brand-blue/30 flex items-center gap-5 relative overflow-hidden transition-colors">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                        <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl border border-white/20 flex items-center justify-center shrink-0 bg-white/10 backdrop-blur-md z-10">
+                            <span class="material-symbols-outlined text-[28px]">notifications_active</span>
+                        </div>
+                        <div class="flex-1 min-w-0 z-10">
+                            <h3 class="font-semibold text-blue-100 text-[11px] md:text-xs tracking-wider uppercase mb-0.5">Jadwal Latihan Terdekat</h3>
+                            <p class="font-heading font-bold text-lg md:text-xl truncate leading-tight mt-1">{{ $jadwalTerdekat['tanggal'] }}</p>
+                            <div class="flex flex-wrap items-center gap-3 mt-2">
+                                <span class="text-[11px] bg-white/20 px-2 py-1 rounded-md font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> {{ $jadwalTerdekat['jam'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 <!-- Pengajuan Izin / Sakit -->
                 <livewire:pengajuan-izin />
@@ -127,7 +130,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                 <div>
                     <h2 class="font-heading text-lg md:text-xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors">Riwayat Presensi</h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1 transition-colors">10 data terakhir</p>
+                    {{-- <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1 transition-colors">10 data terakhir</p> --}}
                 </div>
 
                 <div class="relative shrink-0 w-full sm:w-auto min-w-[140px]">
@@ -139,7 +142,9 @@
                         @endforelse
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
-                        <span class="material-symbols-outlined">expand_more</span>
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
