@@ -37,6 +37,7 @@ class AutoAlfa extends Command
 
         foreach ($jadwalSelesai as $jadwal) {
             $anggotaIdTanpaKehadiran = Anggota::query()
+                ->where('status_anggota', Anggota::STATUS_AKTIF)
                 ->whereDoesntHave('absensi', function ($query) use ($jadwal, $now) {
                     $query->where('jadwal_id', $jadwal->id)
                         ->whereDate('tanggal', $now->toDateString());

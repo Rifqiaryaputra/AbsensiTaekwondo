@@ -42,6 +42,12 @@ class AbsensiScan extends Component
     public function mount(JadwalService $jadwalService): void
     {
         $this->refreshJadwal($jadwalService);
+
+        if ($message = session()->pull('success')) {
+            $this->dispatch('toast', title: 'Berhasil', message: $message, type: 'success');
+        } elseif ($message = session()->pull('error')) {
+            $this->dispatch('toast', title: 'Gagal', message: $message, type: 'error');
+        }
     }
 
     public function refreshJadwal(JadwalService $jadwalService): void
@@ -140,15 +146,26 @@ class AbsensiScan extends Component
         $user = auth()->user();
         $isAuthorizedRole = $user && in_array($user->role, [User::ROLE_ADMIN, User::ROLE_PETUGAS], true);
 
+        // Jika bukan Admin/Petugas, langsung blokir (hilangkan tombol)
         if (! $isAuthorizedRole || ! $this->sesiTanggal) {
             return false;
         }
 
+        // Admin bebas dari batasan waktu: bisa edit kapan pun.
+        if ($user->role === User::ROLE_ADMIN) {
+            return true;
+        }
+
+        // KONDISI 1: Boleh edit jika jadwal absensi sedang berjalan (live) hari ini
+        if ($this->sesiMode === 'live') {
+            return true;
+        }
+
+        // KONDISI 2: Boleh edit jika sedang berada di jendela koreksi (besok harinya jam 12:00 - 13:00)
         $now = now();
         $jadwalDate = Carbon::parse($this->sesiTanggal);
         $nextDay = $jadwalDate->copy()->addDay()->startOfDay();
 
-        // Jendela koreksi: besok pukul 12:00 - 13:00.
         $windowStart = $nextDay->copy()->setHour(12)->setMinute(0);
         $windowEnd = $nextDay->copy()->setHour(13)->setMinute(0);
 
@@ -161,7 +178,6 @@ class AbsensiScan extends Component
 
         if ($nim === '') {
             $this->dispatch('toast', title: 'Masukkan NIM', message: 'NIM tidak boleh kosong', type: 'warning');
-
             return;
         }
 
@@ -169,9 +185,17 @@ class AbsensiScan extends Component
 
         if (! $anggota) {
             $this->dispatch('toast', title: 'Gagal', message: "NIM {$nim} tidak ditemukan", type: 'error');
-
             return;
         }
+
+        // --- VALIDASI STATUS ANGGOTA (INPUT MANUAL) ---
+        if ($anggota->status_anggota !== 'aktif') {
+            $statusTeks = ucfirst($anggota->status_anggota);
+            $this->dispatch('toast', title: 'Akses Ditolak', message: "Anggota ini berstatus {$statusTeks} dan tidak dapat diabsen.", type: 'warning');
+            $this->nim = ''; // Bersihkan input
+            return;
+        }
+        // ----------------------------------------------
 
         $result = $service->catatKehadiran($anggota, Absensi::SUMBER_MANUAL, auth()->id());
         $this->dispatchToast($result);
@@ -192,9 +216,16 @@ class AbsensiScan extends Component
 
         if (! $anggota) {
             $this->dispatch('toast', title: 'Gagal', message: "ID Anggota {$idAnggota} tidak ditemukan", type: 'error');
-
             return;
         }
+
+        // --- VALIDASI STATUS ANGGOTA (SCAN QR) ---
+        if ($anggota->status_anggota !== 'aktif') {
+            $statusTeks = ucfirst($anggota->status_anggota);
+            $this->dispatch('toast', title: 'Akses Ditolak', message: "Anggota dengan nama {$anggota->nama_lengkap} berstatus {$statusTeks}.", type: 'warning');
+            return;
+        }
+        // -----------------------------------------
 
         $result = $service->catatKehadiran($anggota, Absensi::SUMBER_SCAN, auth()->id());
         $this->dispatchToast($result);
@@ -202,10 +233,10 @@ class AbsensiScan extends Component
     }
 
     #[On('changeStatus')]
-    public function updateStatus(int $absensiId, string $status, AbsensiService $service): void
+    public function updateStatus(int|string $absensiId, string $status, AbsensiService $service): void
     {
         if (! $this->canEditAbsensi()) {
-            abort(403, 'Sesi perbaikan absen belum dibuka atau sudah ditutup.');
+            abort(403, 'Akses ditolak. Sesi absen sedang tidak aktif atau di luar jam perbaikan (12.00 - 13.00 WIB keesokan harinya).');
         }
 
         $absensi = Absensi::find($absensiId);

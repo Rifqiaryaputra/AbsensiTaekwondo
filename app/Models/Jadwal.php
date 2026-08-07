@@ -18,7 +18,15 @@ class Jadwal extends Model
         'hari',
         'jam_start',
         'jam_close',
+        'is_closed',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_closed' => 'boolean',
+        ];
+    }
 
     public function absensi(): HasMany
     {

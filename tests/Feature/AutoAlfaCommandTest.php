@@ -8,7 +8,6 @@ use App\Models\Anggota;
 use App\Models\HariLibur;
 use App\Models\IzinSakit;
 use App\Models\Jadwal;
-use App\Models\User;
 use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,8 +27,12 @@ class AutoAlfaCommandTest extends TestCase
         $now = Carbon::now();
         $start = $now->copy()->subMinutes(30)->format('H:i:s');
         $close = $now->copy()->subMinute()->format('H:i:s');
-        if ($now->copy()->subMinutes(30)->isYesterday()) { $start = '00:00:00'; }
-        if ($now->copy()->subMinute()->isYesterday()) { $close = '00:00:00'; }
+        if ($now->copy()->subMinutes(30)->isYesterday()) {
+            $start = '00:00:00';
+        }
+        if ($now->copy()->subMinute()->isYesterday()) {
+            $close = '00:00:00';
+        }
 
         return Jadwal::create([
             'hari' => $this->hariIni(),
@@ -104,6 +107,24 @@ class AutoAlfaCommandTest extends TestCase
 
         $this->assertDatabaseCount('absensi', 1);
         $this->assertDatabaseHas('absensi', ['anggota_id' => $a->id, 'status' => 'alfa']);
+    }
+
+    public function test_auto_alfa_ignores_non_aktif_and_alumni(): void
+    {
+        $jadwal = $this->jadwalSelesai();
+        $aktif = $this->anggota('221111207', 'Anggota Tetap');
+        $nonAktif = $this->anggota('221111208', 'Anggota Non Aktif');
+        $alumni = $this->anggota('221111209', 'Anggota Alumni');
+
+        $nonAktif->update(['status_anggota' => Anggota::STATUS_NON_AKTIF]);
+        $alumni->update(['status_anggota' => Anggota::STATUS_ALUMNI]);
+
+        $this->artisan(AutoAlfa::class)->assertSuccessful();
+
+        $this->assertDatabaseHas('absensi', ['anggota_id' => $aktif->id, 'status' => 'alfa']);
+        $this->assertDatabaseMissing('absensi', ['anggota_id' => $nonAktif->id]);
+        $this->assertDatabaseMissing('absensi', ['anggota_id' => $alumni->id]);
+        $this->assertDatabaseCount('absensi', 1);
     }
 
     public function test_auto_alfa_skips_hari_libur(): void

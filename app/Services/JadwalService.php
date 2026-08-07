@@ -29,6 +29,7 @@ class JadwalService
             ->where('hari', $this->hariNama($now))
             ->whereTime('jam_start', '<=', $now->toTimeString())
             ->whereTime('jam_close', '>=', $now->toTimeString())
+            ->where('is_closed', false)
             ->first();
     }
 

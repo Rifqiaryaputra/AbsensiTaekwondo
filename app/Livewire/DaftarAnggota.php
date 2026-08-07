@@ -61,6 +61,8 @@ class DaftarAnggota extends Component
 
     public string $bpjs = '';
 
+    public string $status_anggota = Anggota::STATUS_AKTIF;
+
     public ?string $fotoLama = null;
 
     public $foto;
@@ -172,6 +174,7 @@ class DaftarAnggota extends Component
         $this->fakultas = $item->fakultas;
         $this->prodi = $item->program_studi;
         $this->bpjs = $item->no_bpjs ?? '';
+        $this->status_anggota = $item->status_anggota ?? Anggota::STATUS_AKTIF;
         $this->showForm = true;
     }
 
@@ -198,6 +201,7 @@ class DaftarAnggota extends Component
             'fakultas' => ['required', Rule::in($this->fakultasList())],
             'prodi' => ['required', Rule::in($this->prodiList())],
             'bpjs' => ['nullable', 'string', 'max:50'],
+            'status_anggota' => ['required', Rule::in(Anggota::statusList())],
             'foto' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
         ]);
 
@@ -237,6 +241,7 @@ class DaftarAnggota extends Component
             'fakultas' => $this->fakultas,
             'program_studi' => $this->prodi,
             'no_bpjs' => $this->bpjs !== '' ? $this->bpjs : null,
+            'status_anggota' => $this->status_anggota,
             'qr_code' => $qrCode,
             'foto_dobok' => $this->foto ? $service->storeFotoDobok($this->foto, $idAnggota) : null,
         ]);
@@ -271,6 +276,7 @@ class DaftarAnggota extends Component
         $anggota->fakultas = $this->fakultas;
         $anggota->program_studi = $this->prodi;
         $anggota->no_bpjs = $this->bpjs !== '' ? $this->bpjs : null;
+        $anggota->status_anggota = $this->status_anggota;
 
         if ($this->foto) {
             if ($anggota->foto_dobok) {
@@ -410,6 +416,7 @@ class DaftarAnggota extends Component
         $this->fakultas = '';
         $this->prodi = '';
         $this->bpjs = '';
+        $this->status_anggota = Anggota::STATUS_AKTIF;
     }
 
     public function render()

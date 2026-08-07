@@ -9,4 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Auto-rekap status Alfa untuk jadwal yang sesi absensinya sudah ditutup.
-Schedule::command('absen:auto-alfa')->hourly();
+// Daftarkan perintah auto-alfa agar berjalan setiap menit
+Schedule::command('absen:auto-alfa')->everyMinute();

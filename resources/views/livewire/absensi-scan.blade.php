@@ -1,4 +1,4 @@
-<div wire:poll.5s="refreshJadwal">
+<div wire:poll.5s="refreshJadwal" x-data="{ showCloseModal: false }">
     <style>
         /* Pastikan feed kamera memenuhi seluruh area scanner */
         #qr-reader { position: relative; }
@@ -11,14 +11,39 @@
         <div class="xl:col-span-5 flex flex-col gap-5 md:gap-6 w-full">
             <!-- Active Schedule Alert -->
             @if ($jadwalInfo)
-                <div class="bg-brand-light dark:bg-brand-blue/20 rounded-2xl md:rounded-3xl p-4 md:p-5 flex items-center justify-center md:justify-start gap-4 border border-brand-blue/10 dark:border-brand-blue/30 transition-colors duration-300">
-                    <div class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-brand-blue dark:text-blue-400 shrink-0 shadow-sm transition-colors duration-300">
-                        <span class="material-symbols-outlined">notifications_active</span>
+                <!-- Wrapper utama: flex-col di mobile, flex-row di desktop (md:) -->
+                <div class="bg-[#F8FAFC] border border-[#E5E9F2] rounded-[1.5rem] p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-6">
+                    
+                    <!-- Bagian Kiri: Ikon & Teks -->
+                    <div class="flex items-center gap-4">
+                        <!-- Lingkaran Ikon Lonceng -->
+                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#3D5EE1] shadow-[0_2px_10px_rgba(0,0,0,0.04)] shrink-0">
+                            <!-- Ikon Lonceng (Solid) -->
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path>
+                            </svg>
+                        </div>
+                        
+                        <!-- Teks Informasi -->
+                        <div class="flex flex-col">
+                            <h3 class="text-[14px] md:text-[15px] font-bold text-[#2A44B6] leading-snug md:max-w-[280px]">
+                                Jadwal Aktif: {{ $jadwalInfo }}
+                            </h3>
+                            <p class="text-[12px] md:text-[13px] font-medium text-[#7A93F5] mt-0.5">
+                                (Batas tutup absen: {{ $batasTutup }})
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-brand-blue dark:text-blue-300 text-sm">Jadwal Aktif: {{ $jadwalInfo }}</p>
-                        <p class="text-xs text-brand-blue/70 dark:text-blue-400/70 font-semibold mt-1">(Batas tutup absen: {{ $batasTutup }})</p>
-                    </div>
+
+                    <!-- Bagian Kanan: Tombol -->
+                    <button type="button" @click="showCloseModal = true" 
+                        class="w-full md:w-auto bg-[#EF4444] hover:bg-red-600 text-white font-bold py-3 md:py-2.5 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(239,68,68,0.3)] transition-all shrink-0">
+                        <!-- Ikon Gembok (Lock) -->
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Tutup Absen
+                    </button>
                 </div>
             @elseif ($isLibur)
                 @php \Carbon\Carbon::setLocale('id'); @endphp
@@ -82,23 +107,32 @@
                 </div>
             </div>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-2 gap-3 md:gap-4">
-                <div class="bg-status-hadir-bg dark:bg-green-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
-                    <span class="font-heading font-extrabold text-[42px] leading-none text-status-hadir-text dark:text-green-400 mb-2">{{ $this->countStatus('hadir') }}</span>
-                    <p class="text-[15px] font-bold text-gray-700 dark:text-gray-200 leading-tight">Hadir</p>
-                </div>
-                <div class="bg-status-izin-bg dark:bg-blue-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
-                    <span class="font-heading font-extrabold text-[42px] leading-none text-status-izin-text dark:text-blue-400 mb-2">{{ $this->countStatus('izin') }}</span>
-                    <p class="text-[15px] font-bold text-gray-700 dark:text-gray-200 leading-tight">Izin</p>
-                </div>
-                <div class="bg-status-sakit-bg dark:bg-yellow-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
-                    <span class="font-heading font-extrabold text-[42px] leading-none text-status-sakit-text dark:text-yellow-400 mb-2">{{ $this->countStatus('sakit') }}</span>
-                    <p class="text-[15px] font-bold text-gray-700 dark:text-gray-200 leading-tight">Sakit</p>
-                </div>
-                <div class="bg-status-alfa-bg dark:bg-red-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
-                    <span class="font-heading font-extrabold text-[42px] leading-none text-status-alfa-text dark:text-red-400 mb-2">{{ $this->countStatus('alfa') }}</span>
-                    <p class="text-[15px] font-bold text-gray-700 dark:text-gray-200 leading-tight">Alfa</p>
+            <!-- Statistics Wrapper Box -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-card transition-colors duration-300">
+                <div class="grid grid-cols-2 gap-3 md:gap-4">
+                            <!-- Hadir -->
+                    <div class="stat-card bg-status-hadir-bg dark:bg-green-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
+                        <span id="countHadir" class="font-heading font-extrabold text-[42px] leading-none text-status-hadir-text dark:text-green-400 mb-2">{{ $this->countStatus('hadir') }}</span>
+                        <p class="text-[15px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Hadir</p>
+                    </div>
+                            
+                     <!-- Izin -->
+                    <div class="stat-card bg-status-izin-bg dark:bg-blue-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
+                        <span id="countIzin" class="font-heading font-extrabold text-[42px] leading-none text-status-izin-text dark:text-blue-400 mb-2">{{ $this->countStatus('izin') }}</span>
+                        <p class="text-[15px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Izin</p>
+                    </div>
+
+                    <!-- Sakit -->
+                    <div class="stat-card bg-status-sakit-bg dark:bg-yellow-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
+                        <span id="countSakit" class="font-heading font-extrabold text-[42px] leading-none text-status-sakit-text dark:text-yellow-400 mb-2">{{ $this->countStatus('sakit') }}</span>
+                        <p class="text-[15px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Sakit</p>
+                    </div>
+
+                    <!-- Alfa -->
+                    <div class="stat-card bg-status-alfa-bg dark:bg-red-900/20 rounded-2xl md:rounded-3xl p-5 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 duration-300">
+                        <span id="countAlfa" class="font-heading font-extrabold text-[42px] leading-none text-status-alfa-text dark:text-red-400 mb-2">{{ $this->countStatus('alfa') }}</span>
+                        <p class="text-[15px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Alfa</p>    
+                    </div>
                 </div>
             </div>
         </div>
@@ -202,6 +236,42 @@
     </div>
     @endif
 
+    <!-- Tutup Absen Confirmation Modal -->
+    @if ($jadwalId)
+    <template x-teleport="body">
+        <div x-cloak x-show="showCloseModal" x-transition.opacity.duration.300ms
+            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+            <div class="absolute inset-0" @click="showCloseModal = false"></div>
+            <div x-cloak x-show="showCloseModal" x-transition.scale.origin.center.duration.200ms
+                class="relative bg-white rounded-[2rem] p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl">
+                <div class="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-extrabold text-gray-900 mb-2">Tutup Sesi Absensi?</h3>
+                <p class="text-sm text-gray-500 mb-8">Tindakan ini akan menghentikan proses absensi secara permanen. Anggota yang berstatus <strong class="text-gray-700">Belum</strong> akan otomatis diubah menjadi <strong class="text-gray-700">Alfa</strong>.</p>
+                <div class="flex flex-col-reverse sm:flex-row gap-3">
+                    <button type="button" @click="showCloseModal = false"
+                        class="w-full py-3.5 px-4 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <form action="{{ route('jadwal.tutup', $jadwalId) }}" method="POST" class="w-full">
+                        @csrf
+                        <button type="submit"
+                            class="w-full py-3.5 px-4 bg-[#EF4444] hover:bg-red-600 text-white rounded-xl text-sm font-bold shadow-[0_8px_20px_rgba(239,68,68,0.25)] flex items-center justify-center gap-2 transition-all">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                            </svg>
+                            Ya, Tutup
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+    @endif
+
     @push('scripts')
         <script>
             window.openEditStatusModal = function (absensiId, name) {
@@ -211,7 +281,9 @@
             };
 
             window.updateStatus = function (status) {
-                const absensiId = document.getElementById('modalAbsensiId').value;
+                // parseInt digunakan untuk mengubah tipe data string ("52") menjadi integer murni (52)
+                const absensiId = parseInt(document.getElementById('modalAbsensiId').value);
+                
                 Livewire.dispatch('changeStatus', { absensiId: absensiId, status: status });
                 closeModal('editStatusModal');
             };

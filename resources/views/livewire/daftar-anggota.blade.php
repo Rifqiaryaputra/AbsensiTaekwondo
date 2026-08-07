@@ -65,6 +65,11 @@
                                 <div class="flex flex-col">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-bold text-gray-900 dark:text-white text-sm">{{ $member->nama_lengkap }}</span>
+                                        @if ($member->status_anggota !== \App\Models\Anggota::STATUS_AKTIF)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold {{ $member->status_anggota === \App\Models\Anggota::STATUS_ALUMNI ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">
+                                                {{ $member->status_anggota === \App\Models\Anggota::STATUS_ALUMNI ? 'Alumni' : 'Non-Aktif' }}
+                                            </span>
+                                        @endif
                                         @if ($this->isIncomplete($member))
                                             <span class="inline-flex items-center gap-1 bg-amber-100 dark:bg-yellow-900/30 text-amber-700 dark:text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full" title="Data tidak lengkap - perlu dilengkapi">⚠️ Data Tidak Lengkap</span>
                                         @endif
@@ -154,6 +159,25 @@
 
             <div class="p-6 overflow-y-auto">
                 <form wire:submit.prevent="save" class="space-y-5">
+                    <!-- Status Keanggotaan -->
+                    <div>
+                        <div class="bg-gray-100 p-1 rounded-lg flex items-center w-max mx-auto">
+                            <button type="button" wire:click="$set('status_anggota', '{{ \App\Models\Anggota::STATUS_AKTIF }}')"
+                                class="px-4 py-2 text-sm font-semibold rounded-md transition-colors {{ $status_anggota === \App\Models\Anggota::STATUS_AKTIF ? 'bg-white shadow-sm text-green-600' : 'text-gray-500 hover:text-gray-700' }}">
+                                Aktif
+                            </button>
+                            <button type="button" wire:click="$set('status_anggota', '{{ \App\Models\Anggota::STATUS_NON_AKTIF }}')"
+                                class="px-4 py-2 text-sm font-semibold rounded-md transition-colors {{ $status_anggota === \App\Models\Anggota::STATUS_NON_AKTIF ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700' }}">
+                                Non-Aktif
+                            </button>
+                            <button type="button" wire:click="$set('status_anggota', '{{ \App\Models\Anggota::STATUS_ALUMNI }}')"
+                                class="px-4 py-2 text-sm font-semibold rounded-md transition-colors {{ $status_anggota === \App\Models\Anggota::STATUS_ALUMNI ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700' }}">
+                                Alumni
+                            </button>
+                        </div>
+                        @error('status_anggota') <p class="text-xs text-red-500 mt-1 text-center">{{ $message }}</p> @enderror
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Lengkap <span class="text-red-500">*</span></label>
@@ -291,6 +315,13 @@
                     <div class="text-center mt-4 mb-6">
                         <h3 class="font-heading font-extrabold text-2xl text-gray-900 dark:text-white leading-tight">{{ $viewed->nama_lengkap }}</h3>
                         <p class="text-sm font-medium text-brand-blue dark:text-brand-light mt-1.5">{{ $viewed->nim }} · {{ $viewed->id_anggota }}</p>
+                        @if ($viewed->status_anggota === \App\Models\Anggota::STATUS_AKTIF)
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold mt-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">Aktif</span>
+                        @elseif ($viewed->status_anggota === \App\Models\Anggota::STATUS_ALUMNI)
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold mt-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">Alumni</span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold mt-2 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">Non-Aktif</span>
+                        @endif
                     </div>
 
                     <div class="bg-gray-50/80 dark:bg-gray-800/80 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">

@@ -13,6 +13,12 @@ class Anggota extends Model
 
     protected $table = 'anggota';
 
+    public const STATUS_AKTIF = 'aktif';
+
+    public const STATUS_NON_AKTIF = 'non-aktif';
+
+    public const STATUS_ALUMNI = 'alumni';
+
     protected $fillable = [
         'id_anggota',
         'nama_lengkap',
@@ -24,8 +30,18 @@ class Anggota extends Model
         'fakultas',
         'program_studi',
         'no_bpjs',
+        'status_anggota',
         'qr_code',
     ];
+
+    public static function statusList(): array
+    {
+        return [
+            self::STATUS_AKTIF,
+            self::STATUS_NON_AKTIF,
+            self::STATUS_ALUMNI,
+        ];
+    }
 
     protected function casts(): array
     {

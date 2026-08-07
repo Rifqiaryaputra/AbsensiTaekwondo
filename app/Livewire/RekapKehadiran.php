@@ -18,16 +18,22 @@ class RekapKehadiran extends Component
 
     public string $search = '';
 
-    public string $start;
+    public string $start = '';
 
-    public string $end;
+    public string $end = '';
 
     public int $perPage = 10;
 
-    public function mount(): void
+    public function getEffectiveDates(): array
     {
-        $this->start = Carbon::now()->startOfMonth()->toDateString();
-        $this->end = Carbon::now()->endOfMonth()->toDateString();
+        if ($this->start !== '' && $this->end !== '') {
+            return ['start' => $this->start, 'end' => $this->end];
+        }
+
+        $latest = Absensi::query()->whereDate('tanggal', '<=', now()->toDateString())->max('tanggal');
+        $target = $latest ? Carbon::parse($latest)->toDateString() : Carbon::now()->toDateString();
+
+        return ['start' => $target, 'end' => $target];
     }
 
     public function updatedSearch(): void
@@ -49,9 +55,7 @@ class RekapKehadiran extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['search']);
-        $this->start = Carbon::now()->startOfMonth()->toDateString();
-        $this->end = Carbon::now()->endOfMonth()->toDateString();
+        $this->reset(['search', 'start', 'end']);
         $this->resetPage();
     }
 
@@ -69,12 +73,15 @@ class RekapKehadiran extends Component
     {
         $search = strtolower(trim($this->search));
 
+        [$start, $end] = array_values($this->getEffectiveDates());
+
         return Anggota::query()
+            ->where('status_anggota', 'aktif')
             ->withCount([
-                'absensi as total_hadir' => fn ($q) => $q->where('status', Absensi::STATUS_HADIR)->whereDate('tanggal', '>=', $this->start)->whereDate('tanggal', '<=', $this->end),
-                'absensi as total_sakit' => fn ($q) => $q->where('status', Absensi::STATUS_SAKIT)->whereDate('tanggal', '>=', $this->start)->whereDate('tanggal', '<=', $this->end),
-                'absensi as total_izin' => fn ($q) => $q->where('status', Absensi::STATUS_IZIN)->whereDate('tanggal', '>=', $this->start)->whereDate('tanggal', '<=', $this->end),
-                'absensi as total_alfa' => fn ($q) => $q->where('status', Absensi::STATUS_ALFA)->whereDate('tanggal', '>=', $this->start)->whereDate('tanggal', '<=', $this->end),
+                'absensi as total_hadir' => fn ($q) => $q->where('status', Absensi::STATUS_HADIR)->whereDate('tanggal', '>=', $start)->whereDate('tanggal', '<=', $end),
+                'absensi as total_sakit' => fn ($q) => $q->where('status', Absensi::STATUS_SAKIT)->whereDate('tanggal', '>=', $start)->whereDate('tanggal', '<=', $end),
+                'absensi as total_izin' => fn ($q) => $q->where('status', Absensi::STATUS_IZIN)->whereDate('tanggal', '>=', $start)->whereDate('tanggal', '<=', $end),
+                'absensi as total_alfa' => fn ($q) => $q->where('status', Absensi::STATUS_ALFA)->whereDate('tanggal', '>=', $start)->whereDate('tanggal', '<=', $end),
             ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -89,9 +96,11 @@ class RekapKehadiran extends Component
     {
         $counts = ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alfa' => 0];
 
+        [$start, $end] = array_values($this->getEffectiveDates());
+
         $rows = Absensi::query()
-            ->whereDate('tanggal', '>=', $this->start)
-            ->whereDate('tanggal', '<=', $this->end)
+            ->whereDate('tanggal', '>=', $start)
+            ->whereDate('tanggal', '<=', $end)
             ->selectRaw('status, count(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status')
@@ -112,14 +121,17 @@ class RekapKehadiran extends Component
 
     public function exportExcel()
     {
+        [$start, $end] = array_values($this->getEffectiveDates());
+
         return Excel::download(
-            new RekapKehadiranExport($this->search, $this->start, $this->end),
-            'Rekap_Kehadiran_'.$this->start.'_sd_'.$this->end.'.xlsx'
+            new RekapKehadiranExport($this->search, $start, $end),
+            'Rekap_Kehadiran_'.$start.'_sd_'.$end.'.xlsx'
         );
     }
 
     public function exportPdf()
     {
+        [$start, $end] = array_values($this->getEffectiveDates());
         $anggota = $this->anggotaQuery()->orderBy('id_anggota')->get();
         $summary = $this->summary();
         $settings = PengaturanProfil::instance();
@@ -127,8 +139,8 @@ class RekapKehadiran extends Component
         $html = view('pdf.rekap-kehadiran', [
             'anggota' => $anggota,
             'summary' => $summary,
-            'start' => $this->start,
-            'end' => $this->end,
+            'start' => $start,
+            'end' => $end,
             'search' => $this->search,
             'settings' => $settings,
         ])->render();
@@ -142,7 +154,7 @@ class RekapKehadiran extends Component
 
         return response()->streamDownload(function () use ($output) {
             echo $output;
-        }, 'Rekap_Kehadiran_'.$this->start.'_sd_'.$this->end.'.pdf', ['Content-Type' => 'application/pdf']);
+        }, 'Rekap_Kehadiran_'.$start.'_sd_'.$end.'.pdf', ['Content-Type' => 'application/pdf']);
     }
 
     public function render()
@@ -150,6 +162,7 @@ class RekapKehadiran extends Component
         return view('livewire.rekap-kehadiran', [
             'anggota' => $this->anggotaQuery()->orderBy('id_anggota')->paginate($this->perPage),
             'summary' => $this->summary(),
+            'dates' => $this->getEffectiveDates(),
         ]);
     }
 }

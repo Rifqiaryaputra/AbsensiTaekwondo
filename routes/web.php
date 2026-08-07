@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:admin,petugas')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi');
+        Route::post('/jadwal/{id}/tutup', [AbsensiController::class, 'closeManual'])->name('jadwal.tutup');
         Route::get('/data-anggota', [AnggotaController::class, 'index'])->name('anggota.index');
         Route::get('/data-anggota/export', [AnggotaController::class, 'export'])->name('anggota.export');
         Route::get('/perizinan', [PerizinanController::class, 'index'])->name('perizinan.index');

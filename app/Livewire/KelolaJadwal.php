@@ -118,12 +118,17 @@ class KelolaJadwal extends Component
     public function confirmDelete(): void
     {
         $jadwal = Jadwal::find($this->deleteId);
+        
         if ($jadwal) {
+            // 1. Sapu bersih semua data absensi yang menempel pada jadwal ini terlebih dahulu
+            \App\Models\Absensi::where('jadwal_id', $this->deleteId)->delete();
+            
+            // 2. Setelah data absensi bersih, barulah jadwal bisa dihapus dengan aman
             $jadwal->delete();
         }
 
         $this->closeDelete();
-        $this->dispatch('toast', title: 'Dihapus', message: 'Jadwal telah dihapus.', type: 'success');
+        $this->dispatch('toast', title: 'Dihapus', message: 'Jadwal beserta data absensinya telah dihapus.', type: 'success');
     }
 
     public function render()

@@ -55,7 +55,7 @@
     <!-- Summary Banner -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-brand-light dark:bg-brand-blue/10 rounded-2xl p-4 md:p-5 border border-brand-blue/10 dark:border-brand-blue/20 gap-3 md:gap-0 transition-colors duration-300">
         <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Periode: <span class="font-bold text-gray-900 dark:text-white">{{ $this->formatShort($start) }} - {{ $this->formatShort($end) }}</span>
+            Periode: <span class="font-bold text-gray-900 dark:text-white">{{ $this->formatShort($dates['start']) }} - {{ $this->formatShort($dates['end']) }}</span>
         </p>
         <div class="flex flex-wrap gap-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>Hadir: <span>{{ $summary['hadir'] }}</span></span>
