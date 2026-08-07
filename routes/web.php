@@ -12,6 +12,7 @@ use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RekapController;
 use App\Http\Controllers\SettingsController;
+use App\Livewire\PengajuanIzin;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Khusus Anggota
     Route::middleware('role:anggota')->group(function () {
         Route::get('/dashboard-anggota', [AnggotaDashboardController::class, 'index'])->name('anggota.dashboard');
+        Route::get('/anggota/izin', PengajuanIzin::class)->name('anggota.izin');
         Route::get('/pengaturan-anggota', [PengaturanAnggotaController::class, 'index'])->name('anggota.pengaturan');
     });
 

@@ -8,10 +8,14 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class PengajuanIzin extends Component
 {
     use WithFileUploads;
+    use WithPagination;
+
+    public int $perPage = 10;
 
     public bool $showForm = false;
 
@@ -116,6 +120,19 @@ class PengajuanIzin extends Component
             return;
         }
 
+                // DUPLIKAT: maksimal 1 pengajuan aktif per anggota per jadwal.
+        $sudahMengajukan = IzinSakit::query()
+            ->where('anggota_id', $anggota->id)
+            ->where('jadwal_id', $jadwal->id)
+            ->whereIn('status', [IzinSakit::STATUS_MENUNGGU, IzinSakit::STATUS_DISETUJUI])
+            ->exists();
+
+        if ($sudahMengajukan) {
+            $this->dispatch('toast', title: 'Gagal', message: 'Anda sudah melakukan pengajuan izin/sakit untuk jadwal ini.', type: 'error');
+
+            return;
+        }
+
         $buktiPath = null;
         if ($this->bukti) {
             $dir = public_path('bukti-izin');
@@ -167,17 +184,8 @@ class PengajuanIzin extends Component
     {
         return IzinSakit::query()
             ->where('anggota_id', auth()->user()?->anggota?->id)
+            ->orderByDesc('tanggal')
             ->orderByDesc('diajukan_pada');
-    }
-
-    public function pengajuanList()
-    {
-        // Tampilkan maks. 3 pengajuan terbaru, dan sembunyikan sesi yang sudah
-        // berumur lebih dari 1 hari (H+1) dari tanggal jadwal.
-        return $this->pengajuanQuery()
-            ->where('tanggal', '>=', now()->subDay()->toDateString())
-            ->limit(3)
-            ->get();
     }
 
     private function resetForm(): void
@@ -193,7 +201,7 @@ class PengajuanIzin extends Component
     public function render()
     {
         return view('livewire.pengajuan-izin', [
-            'pengajuan' => $this->pengajuanList(),
+            'pengajuan' => $this->pengajuanQuery()->paginate($this->perPage),
         ]);
     }
 }

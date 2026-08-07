@@ -195,7 +195,7 @@ class PerizinanFlowTest extends TestCase
         ]);
     }
 
-    public function test_pengajuan_list_hides_old_and_limits_to_3(): void
+    public function test_pengajuan_list_paginates_full_history(): void
     {
         $anggota = $this->anggota();
         $this->actingAsAnggota($anggota);
@@ -205,16 +205,15 @@ class PerizinanFlowTest extends TestCase
         $today = Carbon::now()->toDateString();
         $old = Carbon::now()->subDays(3)->toDateString();
 
-        $this->createIzin($anggota, $jadwal, $today, 'izin');
-        $this->createIzin($anggota, $jadwal, $today, 'izin');
-        $this->createIzin($anggota, $jadwal, $today, 'izin');
-        $this->createIzin($anggota, $jadwal, $today, 'izin');
+        for ($i = 0; $i < 12; $i++) {
+            $this->createIzin($anggota, $jadwal, $today, 'izin');
+        }
         $this->createIzin($anggota, $jadwal, $old, 'sakit');
 
-        $list = (new PengajuanIzin)->pengajuanList();
+        $list = (new PengajuanIzin)->pengajuanQuery()->paginate(10);
 
-        $this->assertCount(3, $list);
-        $this->assertFalse($list->pluck('tanggal')->contains(Carbon::parse($old)));
+        $this->assertCount(10, $list->items());
+        $this->assertSame(13, $list->total());
     }
 
     public function test_pengajuan_allowed_at_monthly_quota_five(): void

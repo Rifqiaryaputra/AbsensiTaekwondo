@@ -38,13 +38,16 @@
         {{ $header }}
     @endisset
 
-    @if (($mobile ?? 'drawer') === 'drawer')
+    @if (($mobile ?? 'drawer') === 'drawer' && auth()->user()?->role !== 'anggota')
         <x-mobile-header :title="$mobileHeaderTitle ?? ''" type="drawer" />
         <x-mobile-overlay />
     @else
         <x-mobile-header :title="$mobileHeaderTitle ?? ''" type="static" />
     @endif
 
+    @if (auth()->user()?->role === 'anggota')
+        <x-bottom-nav />
+    @endif
     <x-sidebar :drawer="($mobile ?? 'drawer') === 'drawer'" />
 
     <main class="w-full md:ml-[280px] pt-20 md:pt-8 min-h-screen pb-24 md:pb-12 transition-all duration-300">
@@ -52,10 +55,6 @@
             {{ $slot }}
         </div>
     </main>
-
-    @if (($mobile ?? 'drawer') === 'static')
-        <x-bottom-nav />
-    @endif
 
     <!-- Toast Container (custom messages) -->
     <div id="toast-container" class="fixed top-20 md:top-5 right-5 z-[100] flex flex-col gap-3"></div>

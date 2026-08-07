@@ -24,6 +24,7 @@
         $subtitle = 'Admin Dashboard';
     } else {
         $items[] = ['route' => 'anggota.dashboard', 'icon' => 'dashboard', 'label' => 'Dashboard'];
+        $items[] = ['route' => 'anggota.izin', 'icon' => 'fact_check', 'label' => 'Riwayat Izin/Sakit'];
         $items[] = ['route' => 'anggota.pengaturan', 'icon' => 'settings', 'label' => 'Pengaturan'];
         $subtitle = 'Sistem Anggota';
     }

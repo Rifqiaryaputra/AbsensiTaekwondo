@@ -59,7 +59,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
 
             <!-- Kiri: KPI Presensi -->
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-card border border-gray-50 dark:border-gray-700 p-6 transition-colors duration-300">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-card border border-gray-50 dark:border-gray-700 p-6 transition-colors duration-300 h-fit">
                 <div class="mb-5 flex justify-between items-center">
                     <div>
                         <h2 class="font-heading font-bold text-lg text-gray-900 dark:text-white">Statistik Kehadiran</h2>
@@ -119,9 +119,6 @@
                         </div>
                     </div>
                 @endif
-
-                <!-- Pengajuan Izin / Sakit -->
-                <livewire:pengajuan-izin />
             </div>
         </div>
 

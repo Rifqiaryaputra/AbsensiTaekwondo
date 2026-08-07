@@ -1,6 +1,6 @@
 <x-app-layout title="Pengaturan - Sistem Absensi UKM Taekwondo" mobile-header-title="Pengaturan" mobile="static">
 
-    <div class="max-w-[768px] mx-auto space-y-6 md:space-y-8 animate-[fadeIn_0.3s_ease-in-out]">
+    <div class="max-w-[768px] mx-auto space-y-6 md:space-y-8 animate-[fadeIn_0.3s_ease-in-out]" x-data="{ showLogoutModal: false }">
         <x-page-header title="Pengaturan Keamanan" subtitle="Perbarui kata sandi akun Anda secara berkala untuk menjaga keamanan data." />
 
         <!-- Settings Card: Ubah Password -->
@@ -63,6 +63,47 @@
                 </div>
             </form>
         </div>
+
+        <!-- Logout Trigger (mobile only) -->
+    <button type="button" @click="showLogoutModal = true"
+        class="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold py-3 px-4 rounded-xl border border-red-100 dark:border-red-900/40 active:bg-red-100 dark:active:bg-red-900/40 transition-colors block md:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Logout
+    </button>
+
+    <!-- Logout Confirmation Modal -->
+    <div x-show="showLogoutModal" style="display: none;" x-transition.opacity
+        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-800 dark:border dark:border-slate-700 rounded-3xl p-6 w-[90%] max-w-sm text-center shadow-xl">
+            <div class="bg-red-50 dark:bg-red-500/10 text-red-500 w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Konfirmasi Keluar?</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-300 mb-6">Apakah Anda yakin ingin keluar dari sistem? Anda harus login kembali untuk masuk.</p>
+
+            <div class="flex gap-3">
+                <button type="button" @click="showLogoutModal = false"
+                    class="flex-1 py-3 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
+                    Batal
+                </button>
+                <form method="POST" action="{{ route('logout') }}" class="flex-1" @submit="showLogoutModal = false">
+                    @csrf
+                    <button type="submit" class="w-full py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors">
+                        Ya, Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
     </div>
 
     @push('scripts')

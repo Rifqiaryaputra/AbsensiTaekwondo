@@ -1,42 +1,57 @@
-<div class="flex flex-col gap-4">
-    <!-- Wadah Kartu Status Izin -->
-    @forelse ($pengajuan as $izin)
-        @php
-            $isSakit = $izin->jenis === 'sakit';
-        @endphp
-        <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl p-5 shadow-card flex items-center justify-between animate-[fadeIn_0.3s_ease-in-out] transition-colors">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors {{ $isSakit ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-500 dark:text-yellow-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400' }}">
-                    <span class="material-symbols-outlined text-[24px]">{{ $isSakit ? 'medical_services' : 'flight_takeoff' }}</span>
-                </div>
-                <div>
-                    <h3 class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1.5 transition-colors">
-                        Pengajuan {{ $isSakit ? 'Sakit' : 'Izin' }}
-                        <x-status-badge :status="$izin->status" />
-                    </h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium transition-colors">{{ $izin->tanggal?->translatedFormat('l, d M Y') }}</p>
-                    @if ($izin->status === 'menunggu')
-                        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-medium">Diajukan: {{ $izin->diajukan_pada?->format('d M Y H:i') }}</p>
-                    @endif
-                </div>
-            </div>
-            @if ($izin->status === 'menunggu')
-                <button type="button" wire:click="batalkan({{ $izin->id }})" class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white transition-colors shrink-0 focus:outline-none" title="Batalkan Pengajuan">
-                    <span class="material-symbols-outlined text-[20px]">delete</span>
-                </button>
-            @endif
+<div class="space-y-6 md:space-y-8">
+    <!-- Header + Aksi -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="font-heading font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight">Riwayat Izin & Sakit</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Ajukan izin/sakit dan pantau status pengajuan Anda.</p>
         </div>
-    @empty
-        <p class="text-xs text-gray-400 dark:text-gray-500 font-medium text-center py-1">Belum ada pengajuan izin/sakit.</p>
-    @endforelse
+        <button type="button" wire:click="toggleForm(true)"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-blue text-white rounded-xl md:rounded-full font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-colors focus:outline-none">
+            <span class="material-symbols-outlined text-[20px]">add_circle</span>
+            Ajukan Izin/Sakit
+        </button>
+    </div>
 
-    <!-- Tombol Pengajuan -->
-    <button type="button" wire:click="toggleForm(true)" class="w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:text-brand-blue dark:hover:text-brand-light hover:border-brand-light dark:hover:border-brand-blue/50 hover:bg-brand-light/50 dark:hover:bg-brand-blue/10 rounded-3xl p-5 flex items-center justify-center gap-3 transition-all font-semibold text-sm md:text-base shadow-card group">
-        <div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-gray-700 text-brand-blue dark:text-brand-light flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-600 transition-colors">
-            <span class="material-symbols-outlined text-[18px]">edit_document</span>
+    <!-- Daftar Riwayat -->
+    <div class="flex flex-col gap-4">
+        @forelse ($pengajuan as $izin)
+            @php
+                $isSakit = $izin->jenis === 'sakit';
+            @endphp
+            <div wire:key="izin-{{ $izin->id }}" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl p-5 shadow-card flex items-center justify-between animate-[fadeIn_0.3s_ease-in-out] transition-colors">
+                <div class="flex items-center gap-4 min-w-0">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors {{ $isSakit ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-500 dark:text-yellow-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400' }}">
+                        <span class="material-symbols-outlined text-[24px]">{{ $isSakit ? 'medical_services' : 'flight_takeoff' }}</span>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1.5 transition-colors">
+                            Pengajuan {{ $isSakit ? 'Sakit' : 'Izin' }}
+                            <x-status-badge :status="$izin->status" />
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium transition-colors">{{ $izin->tanggal?->translatedFormat('l, d M Y') }}</p>
+                        @if ($izin->status === 'menunggu')
+                            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-medium">Diajukan: {{ $izin->diajukan_pada?->format('d M Y H:i') }}</p>
+                        @endif
+                    </div>
+                </div>
+                @if ($izin->status === 'menunggu')
+                    <button type="button" wire:click="batalkan({{ $izin->id }})" class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white transition-colors shrink-0 focus:outline-none" title="Batalkan Pengajuan">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                @endif
+            </div>
+        @empty
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl p-10 shadow-card text-center">
+                <span class="material-symbols-outlined text-[48px] text-gray-300 dark:text-gray-600 mb-3 block">event_busy</span>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Belum ada pengajuan izin/sakit.</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Klik "Ajukan Izin/Sakit" untuk membuat pengajuan baru.</p>
+            </div>
+        @endforelse
+
+        <div class="mt-2">
+            {{ $pengajuan->links() }}
         </div>
-        Ajukan Izin / Sakit
-    </button>
+    </div>
 
     <!-- Modal Pengajuan Izin/Sakit -->
     @if ($showForm)
@@ -77,7 +92,7 @@
                         <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Keterangan</label>
                         <div class="grid grid-cols-2 gap-3">
                             <label class="relative flex flex-col items-center gap-2 p-4 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 cursor-pointer hover:border-blue-300 dark:hover:border-blue-600 transition-all has-[:checked]:border-blue-500 dark:has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20 has-[:checked]:ring-2 has-[:checked]:ring-blue-100 dark:has-[:checked]:ring-blue-900/50 group">
-                                <input type="radio" name="keterangan" value="izin" required wire:model="jenis" class="absolute opacity-0">
+                                <input type="radio" name="jenis" value="izin" required wire:model="jenis" class="absolute opacity-0">
                                 <div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-gray-800 text-blue-500 dark:text-gray-400 flex items-center justify-center group-has-[:checked]:bg-blue-500 group-has-[:checked]:text-white transition-colors">
                                     <span class="material-symbols-outlined text-[18px]">flight_takeoff</span>
                                 </div>
@@ -85,7 +100,7 @@
                             </label>
 
                             <label class="relative flex flex-col items-center gap-2 p-4 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 cursor-pointer hover:border-yellow-300 dark:hover:border-yellow-600 transition-all has-[:checked]:border-yellow-500 dark:has-[:checked]:border-yellow-500 has-[:checked]:bg-yellow-50 dark:has-[:checked]:bg-yellow-900/20 has-[:checked]:ring-2 has-[:checked]:ring-yellow-100 dark:has-[:checked]:ring-yellow-900/50 group">
-                                <input type="radio" name="keterangan" value="sakit" wire:model="jenis" class="absolute opacity-0">
+                                <input type="radio" name="jenis" value="sakit" wire:model="jenis" class="absolute opacity-0">
                                 <div class="w-8 h-8 rounded-full bg-yellow-50 dark:bg-gray-800 text-yellow-500 dark:text-gray-400 flex items-center justify-center group-has-[:checked]:bg-yellow-500 group-has-[:checked]:text-white transition-colors">
                                     <span class="material-symbols-outlined text-[18px]">medical_services</span>
                                 </div>
@@ -96,7 +111,7 @@
 
                     <div>
                         <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Alasan Lengkap</label>
-                        <textarea required rows="3" wire:model="keterangan" placeholder="Tuliskan alasan secara detail..." class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 focus:border-brand-blue transition-all resize-none"></textarea>
+                        <textarea wire:model="keterangan" rows="3" placeholder="Tuliskan alasan secara detail..." class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 focus:border-brand-blue transition-all resize-none"></textarea>
                     </div>
 
                     <div>
