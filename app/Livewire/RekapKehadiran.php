@@ -24,6 +24,12 @@ class RekapKehadiran extends Component
 
     public int $perPage = 10;
 
+    public bool $showEditModal = false;
+
+    public ?Anggota $selectedAnggota = null;
+
+    public array $memberAttendanceDetails = [];
+
     public function getEffectiveDates(): array
     {
         if ($this->start !== '' && $this->end !== '') {
@@ -164,5 +170,64 @@ class RekapKehadiran extends Component
             'summary' => $this->summary(),
             'dates' => $this->getEffectiveDates(),
         ]);
+    }
+
+    public function openEditModal($anggotaId): void
+    {
+        abort_if(! auth()->check() || auth()->user()->role !== 'admin', 403, 'Akses ditolak.');
+
+        [$start, $end] = array_values($this->getEffectiveDates());
+
+        $this->selectedAnggota = Anggota::find($anggotaId);
+
+        if (! $this->selectedAnggota) {
+            return;
+        }
+
+        $this->memberAttendanceDetails = Absensi::query()
+            ->where('anggota_id', $this->selectedAnggota->id)
+            ->whereDate('tanggal', '>=', $start)
+            ->whereDate('tanggal', '<=', $end)
+            ->orderBy('tanggal')
+            ->get()
+            ->map(fn (Absensi $absensi) => [
+                'id' => $absensi->id,
+                'tanggal' => $absensi->tanggal->toDateString(),
+                'status' => $absensi->status,
+            ])
+            ->values()
+            ->all();
+
+        $this->showEditModal = true;
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->selectedAnggota = null;
+        $this->memberAttendanceDetails = [];
+    }
+
+    public function updateStatus($absensiId, string $newStatus): void
+    {
+        abort_if(! auth()->check() || auth()->user()->role !== 'admin', 403, 'Akses ditolak.');
+
+        $valid = [Absensi::STATUS_HADIR, Absensi::STATUS_IZIN, Absensi::STATUS_SAKIT, Absensi::STATUS_ALFA];
+
+        if (! in_array($newStatus, $valid, true)) {
+            return;
+        }
+
+        $absensi = Absensi::find($absensiId);
+
+        if (! $absensi) {
+            return;
+        }
+
+        $absensi->update(['status' => $newStatus]);
+
+        $this->dispatch('toast', title: 'Status Diperbarui', message: 'Status kehadiran berhasil diubah.', type: 'success');
+
+        $this->openEditModal($this->selectedAnggota->id);
     }
 }

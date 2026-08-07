@@ -78,6 +78,9 @@
                         <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider text-center">Total Izin</th>
                         <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider text-center">Total Alfa</th>
                         <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider text-center">Total Hadir</th>
+                        @if (auth()->check() && auth()->user()->role === 'admin')
+                            <th class="py-3 px-3 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider text-center">Aksi</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody id="tableBody" class="divide-y divide-gray-50 dark:divide-gray-700">
@@ -100,10 +103,18 @@
                             <td class="py-3 px-3 md:py-4 md:px-6 text-center">
                                 <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] md:text-xs font-bold bg-status-hadir-bg text-status-hadir-text dark:bg-green-900/30 dark:text-green-400 min-w-[32px]">{{ $a->total_hadir }}</span>
                             </td>
+                            @if (auth()->check() && auth()->user()->role === 'admin')
+                                <td class="py-3 px-3 md:py-4 md:px-6 text-center">
+                                    <button type="button" wire:click="openEditModal({{ $a->id }})"
+                                        class="inline-flex items-center justify-center p-2 rounded-xl border border-brand-blue/30 text-brand-blue dark:text-brand-light hover:bg-brand-light dark:hover:bg-brand-blue/20 hover:border-brand-blue transition-colors" title="Edit absensi">
+                                        <span class="material-symbols-outlined text-[18px]">edit</span>
+                                    </button>
+                                </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="{{ auth()->check() && auth()->user()->role === 'admin' ? 8 : 7 }}">
                                 <div class="py-12 flex flex-col items-center justify-center text-center">
                                     <span class="material-symbols-outlined text-[48px] text-gray-300 dark:text-gray-600 mb-3">search_off</span>
                                     <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Tidak ada data ditemukan</h3>
@@ -138,4 +149,58 @@
         </div>
     </div>
     </div>
+
+    @if (auth()->check() && auth()->user()->role === 'admin')
+    <!-- Edit Attendance Modal (Admin Only) -->
+    <div id="editModal" class="modal-overlay fixed inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 @if($showEditModal) active @endif">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
+                <h2 class="font-heading font-bold text-lg text-gray-900 dark:text-white">Edit Absensi</h2>
+                <button wire:click="closeEditModal" class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors p-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto">
+                @if ($selectedAnggota)
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-11 h-11 rounded-full bg-brand-light dark:bg-brand-blue/20 flex items-center justify-center text-brand-blue dark:text-brand-light font-bold">
+                            {{ strtoupper(substr($selectedAnggota->nama_lengkap, 0, 1)) }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-gray-900 dark:text-white">{{ $selectedAnggota->nama_lengkap }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $selectedAnggota->nim }}</p>
+                        </div>
+                        <span class="ml-auto text-xs font-semibold text-gray-500 dark:text-gray-400">{{ $this->formatShort($dates['start']) }} - {{ $this->formatShort($dates['end']) }}</span>
+                    </div>
+
+                    @forelse ($memberAttendanceDetails as $row)
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 mb-3 bg-gray-50/50 dark:bg-gray-900/40">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="material-symbols-outlined text-gray-400 text-[20px]">event</span>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $this->formatShort($row['tanggal']) }}</span>
+                                <x-status-badge :status="$row['status']" />
+                            </div>
+                            <div class="flex items-center gap-1.5 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-600 w-max">
+                                @foreach ([\App\Models\Absensi::STATUS_HADIR, \App\Models\Absensi::STATUS_IZIN, \App\Models\Absensi::STATUS_SAKIT, \App\Models\Absensi::STATUS_ALFA] as $s)
+                                    <button type="button" wire:click="updateStatus({{ $row['id'] }}, '{{ $s }}')"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors {{ $row['status'] === $s ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' }} {{ $row['status'] === $s ? ($s === 'hadir' ? 'bg-green-500' : ($s === 'izin' ? 'bg-blue-500' : ($s === 'sakit' ? 'bg-yellow-500' : 'bg-red-500'))) : '' }}">
+                                        {{ ucfirst($s) }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-10 flex flex-col items-center justify-center text-center">
+                            <span class="material-symbols-outlined text-[48px] text-gray-300 dark:text-gray-600 mb-3">event_busy</span>
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Tidak ada absensi pada periode ini</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Anggota tidak memiliki catatan kehadiran pada rentang tanggal terpilih.</p>
+                        </div>
+                    @endforelse
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
