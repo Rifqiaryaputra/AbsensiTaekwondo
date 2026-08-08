@@ -120,15 +120,18 @@ class KelolaJadwal extends Component
         $jadwal = Jadwal::find($this->deleteId);
         
         if ($jadwal) {
-            // 1. Sapu bersih semua data absensi yang menempel pada jadwal ini terlebih dahulu
+            // 1. Sapu bersih data absensi yang menempel pada jadwal ini terlebih dahulu
             \App\Models\Absensi::where('jadwal_id', $this->deleteId)->delete();
-            
-            // 2. Setelah data absensi bersih, barulah jadwal bisa dihapus dengan aman
+
+            // 2. Sapu bersih pengajuan izin/sakit yang menempel pada jadwal ini
+            \App\Models\IzinSakit::where('jadwal_id', $this->deleteId)->delete();
+
+            // 3. Setelah data anak bersih, barulah jadwal bisa dihapus dengan aman
             $jadwal->delete();
         }
 
         $this->closeDelete();
-        $this->dispatch('toast', title: 'Dihapus', message: 'Jadwal beserta data absensinya telah dihapus.', type: 'success');
+        $this->dispatch('toast', title: 'Dihapus', message: 'Jadwal beserta data relasinya telah dihapus.', type: 'success');
     }
 
     public function render()
