@@ -5,9 +5,9 @@
         <!-- Area Kartu ID -->
         <div id="area-kartu-id" class="bg-white dark:bg-gray-800 rounded-3xl shadow-card border border-gray-50 dark:border-gray-700 overflow-hidden relative group transition-colors duration-300">
             <div class="absolute top-0 right-0 p-4 z-20 hidden md:block">
-                <button type="button" onclick="showCustomMessage('Unduh kartu tersedia pada fase backend.', 'info')" class="bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-brand-blue dark:hover:text-brand-light shadow-sm hover:shadow-md px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all">
-                    <span class="material-symbols-outlined text-[18px]">download</span> Unduh Kartu
-                </button>
+                <a href="{{ route('anggota.download.qr') }}" class="bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-brand-blue dark:hover:text-brand-light shadow-sm hover:shadow-md px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">download</span> Unduh QR
+                </a>
             </div>
 
             <div class="p-6 md:p-8 relative flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
@@ -51,9 +51,9 @@
         </div>
 
         <!-- Mobile Download Button -->
-        <button type="button" onclick="showCustomMessage('Unduh kartu tersedia pada fase backend.', 'info')" class="md:hidden w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 shadow-sm hover:shadow-md px-4 py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all">
-            <span class="material-symbols-outlined text-[18px]">download</span> Simpan Kartu ke Galeri
-        </button>
+        <a href="{{ route('anggota.download.qr') }}" class="md:hidden w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 shadow-sm hover:shadow-md px-4 py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all">
+            <span class="material-symbols-outlined text-[18px]">download</span> Unduh QR
+        </a>
 
         <!-- Dashboard Grid Area -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">

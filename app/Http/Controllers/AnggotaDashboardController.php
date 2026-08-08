@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Absensi;
 use App\Models\HariLibur;
 use App\Models\Jadwal;
+use App\Services\AnggotaService;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Carbon;
 
 class AnggotaDashboardController extends Controller
@@ -53,6 +55,23 @@ class AnggotaDashboardController extends Controller
         $bulanTerpilih = array_key_first($bulanList) ?? '';
 
         return view('anggota.dashboard', compact('anggota', 'statistik', 'liburTerdekat', 'jadwalTerdekat', 'riwayat', 'bulanList', 'bulanTerpilih'));
+    }
+
+    /**
+     * Unduh QR Code keanggotaan member yang login (hanya QR, tanpa kartu).
+     */
+    public function downloadQR()
+    {
+        $anggota = auth()->user()?->anggota;
+
+        abort_unless($anggota, 404);
+
+        if (! $anggota->qr_code || ! File::exists(public_path($anggota->qr_code))) {
+            $anggota->qr_code = app(AnggotaService::class)->generateQrCode($anggota->id_anggota);
+            $anggota->save();
+        }
+
+        return response()->download(public_path($anggota->qr_code), 'QR_'.$anggota->id_anggota.'.svg');
     }
 
     /**

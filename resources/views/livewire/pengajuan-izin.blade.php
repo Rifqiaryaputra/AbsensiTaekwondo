@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 @if ($izin->status === 'menunggu')
-                    <button type="button" wire:click="batalkan({{ $izin->id }})" class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white transition-colors shrink-0 focus:outline-none" title="Batalkan Pengajuan">
+                    <button type="button" x-data x-on:click="$dispatch('open-cancel-modal', { id: {{ $izin->id }} })" class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white transition-colors shrink-0 focus:outline-none" title="Batalkan Pengajuan">
                         <span class="material-symbols-outlined text-[20px]">delete</span>
                     </button>
                 @endif
@@ -137,4 +137,21 @@
         </div>
     </div>
     @endif
+
+    <!-- Modal Konfirmasi Batalkan Pengajuan -->
+    <div x-data="{ showCancelModal: false, requestId: null }" @open-cancel-modal.window="showCancelModal = true; requestId = $event.detail.id">
+        <div x-show="showCancelModal" x-cloak x-transition.opacity class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/50 dark:bg-gray-900/70 backdrop-blur-sm" @click.self="showCancelModal = false">
+            <div class="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-3xl p-6 w-[90%] max-w-sm text-center shadow-xl animate-[fadeIn_0.2s_ease-out]">
+                <div class="bg-red-50 dark:bg-red-500/10 text-red-500 w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-[32px]">delete</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Batalkan Pengajuan?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-300 mb-6">Apakah Anda yakin ingin membatalkan pengajuan ini? Aksi ini tidak dapat diurungkan.</p>
+                <div class="flex gap-3">
+                    <button type="button" @click="showCancelModal = false" class="flex-1 py-3 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-slate-600 focus:outline-none">Kembali</button>
+                    <button type="button" wire:click="batalkan(requestId)" @click="showCancelModal = false" class="flex-1 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 focus:outline-none transition-colors">Ya, Batalkan</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

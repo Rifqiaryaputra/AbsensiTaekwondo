@@ -72,8 +72,8 @@ class DashboardStats extends Component
 
         $this->kpis = [
             ['label' => 'TOTAL ANGGOTA', 'value' => $totalAnggota, 'icon' => 'group', 'bg' => 'bg-brand-light dark:bg-brand-blue/20', 'text' => 'text-brand-blue'],
-            ['label' => 'TOTAL PETUGAS', 'value' => $totalPetugas, 'icon' => 'shield_person', 'bg' => 'bg-purple-100', 'text' => 'text-purple-600'],
-            ['label' => 'HARI LIBUR', 'value' => $totalLibur, 'icon' => 'calendar_today', 'bg' => 'bg-orange-100', 'text' => 'text-orange-500'],
+            ['label' => 'TOTAL PETUGAS', 'value' => $totalPetugas, 'icon' => 'shield_person', 'bg' => 'bg-purple-100 dark:bg-purple-900/50', 'text' => 'text-purple-600 dark:text-purple-300'],
+            ['label' => 'HARI LIBUR', 'value' => $totalLibur, 'icon' => 'calendar_today', 'bg' => 'bg-orange-100 dark:bg-orange-900/50', 'text' => 'text-orange-500 dark:text-orange-300'],
             ['label' => 'HADIR HARI INI', 'value' => $this->kehadiranHariIni['hadir'], 'icon' => 'check_circle', 'bg' => 'bg-green-50 dark:bg-green-900/30', 'text' => 'text-green-500 dark:text-green-400'],
         ];
 

@@ -43,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Khusus Anggota
     Route::middleware('role:anggota')->group(function () {
         Route::get('/dashboard-anggota', [AnggotaDashboardController::class, 'index'])->name('anggota.dashboard');
+        Route::get('/dashboard-anggota/download-qr', [AnggotaDashboardController::class, 'downloadQR'])->name('anggota.download.qr');
         Route::get('/anggota/izin', PengajuanIzin::class)->name('anggota.izin');
         Route::get('/pengaturan-anggota', [PengaturanAnggotaController::class, 'index'])->name('anggota.pengaturan');
     });
