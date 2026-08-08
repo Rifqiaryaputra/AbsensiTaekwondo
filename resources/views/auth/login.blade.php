@@ -23,7 +23,7 @@
                         <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
                     </svg>
                     <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="Masukkan Email Anda"
-                        class="w-full bg-[#F9FAFB] border border-[#E5E7EB] text-[#4B5563] text-sm rounded-2xl focus:ring-2 focus:ring-[#3D5EE1] focus:border-transparent block pl-12 p-3.5 outline-none transition-all">
+                        class="w-full bg-[#F9FAFB] border text-[#4B5563] text-sm rounded-2xl focus:ring-2 focus:ring-[#3D5EE1] focus:border-transparent block pl-12 p-3.5 outline-none transition-all @error('email') border-red-400 @else border-[#E5E7EB] @enderror">
                 </div>
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
@@ -36,7 +36,7 @@
                         <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
                     </svg>
                     <input id="password" :type="show ? 'text' : 'password'" name="password" required autocomplete="current-password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
-                        class="w-full bg-[#F9FAFB] border border-[#E5E7EB] text-[#4B5563] text-sm rounded-2xl focus:ring-2 focus:ring-[#3D5EE1] focus:border-transparent block pl-12 p-3.5 outline-none transition-all">
+                        class="w-full bg-[#F9FAFB] border text-[#4B5563] text-sm rounded-2xl focus:ring-2 focus:ring-[#3D5EE1] focus:border-transparent block pl-12 p-3.5 outline-none transition-all @error('password') border-red-400 @else border-[#E5E7EB] @enderror">
                     <div @click="show = !show" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
                         <svg x-show="!show" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"></path>

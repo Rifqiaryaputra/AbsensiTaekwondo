@@ -46,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard-anggota/download-qr', [AnggotaDashboardController::class, 'downloadQR'])->name('anggota.download.qr');
         Route::get('/anggota/izin', PengajuanIzin::class)->name('anggota.izin');
         Route::get('/pengaturan-anggota', [PengaturanAnggotaController::class, 'index'])->name('anggota.pengaturan');
+        Route::patch('/pengaturan-anggota/password', [PengaturanAnggotaController::class, 'updatePassword'])->name('anggota.pengaturan.password');
     });
 
     // Profil (semua role)
