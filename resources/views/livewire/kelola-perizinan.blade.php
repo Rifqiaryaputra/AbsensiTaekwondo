@@ -47,9 +47,13 @@
                         <tr wire:key="izin-{{ $item->id }}" class="hover:bg-brand-light/40 dark:hover:bg-gray-800/50 transition-colors group align-top">
                             <td class="py-4 px-6">
                                 <div class="flex items-center gap-3">
-                                    <div class="hidden md:flex w-10 h-10 rounded-full bg-brand-blue text-white items-center justify-center font-heading font-bold text-sm shrink-0">
-                                        {{ strtoupper(mb_substr($item->anggota?->nama_lengkap ?? '-', 0, 1)) }}
-                                    </div>
+                                    @if ($item->anggota?->foto_dobok)
+                                        <img src="{{ asset($item->anggota->foto_dobok) }}" alt="Foto {{ $item->anggota->nama_lengkap }}" class="hidden md:flex w-10 h-10 rounded-full object-cover shrink-0">
+                                    @else
+                                        <div class="hidden md:flex w-10 h-10 rounded-full bg-brand-blue text-white items-center justify-center font-heading font-bold text-sm shrink-0">
+                                            {{ strtoupper(mb_substr($item->anggota?->nama_lengkap ?? '-', 0, 1)) }}
+                                        </div>
+                                    @endif
                                     <div class="flex flex-col">
                                         <span class="font-bold text-gray-900 dark:text-white text-sm">{{ $item->anggota?->nama_lengkap ?? '-' }}</span>
                                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">NIM: {{ $item->anggota?->nim }}</span>

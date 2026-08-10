@@ -11,11 +11,13 @@ use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\SeedsFakultasProdi;
 use Tests\TestCase;
 
 class PerizinanFlowTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsFakultasProdi;
 
     private function hariNama(Carbon $date): string
     {
@@ -24,6 +26,8 @@ class PerizinanFlowTest extends TestCase
 
     private function anggota(): Anggota
     {
+        [$fakultas, $prodi] = $this->fakultasProdi('FMIPA', 'Matematika');
+
         return Anggota::create([
             'id_anggota' => 'TKD22-001',
             'nama_lengkap' => 'Anggota Izin',
@@ -31,8 +35,8 @@ class PerizinanFlowTest extends TestCase
             'tanggal_lahir' => '2003-01-01',
             'jenis_kelamin' => 'L',
             'no_whatsapp' => '08123',
-            'fakultas' => 'FMIPA',
-            'program_studi' => 'Matematika',
+            'fakultas_id' => $fakultas->id,
+            'program_studi_id' => $prodi->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
     }

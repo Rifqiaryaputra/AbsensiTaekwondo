@@ -3,15 +3,18 @@
 namespace App\Imports;
 
 use App\Models\Anggota;
+use App\Models\Fakultas;
+use App\Models\ProgramStudi;
 use App\Services\AnggotaService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use Throwable;
 
-class AnggotaImport implements ToCollection, WithHeadingRow, SkipsOnError
+class AnggotaImport implements SkipsOnError, ToCollection, WithHeadingRow
 {
     public int $imported = 0;
 
@@ -49,6 +52,9 @@ class AnggotaImport implements ToCollection, WithHeadingRow, SkipsOnError
                 $tanggalLahir = $this->parseTanggal($row['tanggal_lahir'] ?? null);
                 $noBpjs = trim((string) ($row['no_bpjs'] ?? ''));
 
+                $namaFakultas = trim((string) ($row['fakultas'] ?? '-')) ?: '-';
+                $namaProdi = trim((string) ($row['program_studi'] ?? '-')) ?: '-';
+
                 $anggota = Anggota::create([
                     'id_anggota' => $idAnggota,
                     'nama_lengkap' => $nama,
@@ -56,8 +62,8 @@ class AnggotaImport implements ToCollection, WithHeadingRow, SkipsOnError
                     'tanggal_lahir' => $tanggalLahir,
                     'jenis_kelamin' => $jk,
                     'no_whatsapp' => trim((string) ($row['no_whatsapp'] ?? '')) ?: null,
-                    'fakultas' => trim((string) ($row['fakultas'] ?? '-')) ?: '-',
-                    'program_studi' => trim((string) ($row['program_studi'] ?? '-')) ?: '-',
+                    'fakultas_id' => $this->resolveFakultasId($namaFakultas),
+                    'program_studi_id' => $this->resolveProdiId($namaFakultas, $namaProdi),
                     'no_bpjs' => $noBpjs !== '' ? $noBpjs : null,
                     'qr_code' => $qrCode,
                 ]);
@@ -85,11 +91,29 @@ class AnggotaImport implements ToCollection, WithHeadingRow, SkipsOnError
         return $this->skipped;
     }
 
+    private function resolveFakultasId(string $namaFakultas): ?int
+    {
+        return Fakultas::where('nama_fakultas', $namaFakultas)->value('id');
+    }
+
+    private function resolveProdiId(string $namaFakultas, string $namaProdi): ?int
+    {
+        $fakultasId = Fakultas::where('nama_fakultas', $namaFakultas)->value('id');
+
+        if (! $fakultasId) {
+            return null;
+        }
+
+        return ProgramStudi::where('fakultas_id', $fakultasId)
+            ->where('nama_prodi', $namaProdi)
+            ->value('id');
+    }
+
     private function parseTanggal(mixed $value): string
     {
         if (is_numeric($value)) {
             // Serial number Excel
-            return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $value)->format('Y-m-d');
+            return Date::excelToDateTimeObject((float) $value)->format('Y-m-d');
         }
 
         if (is_string($value) && strtotime($value)) {

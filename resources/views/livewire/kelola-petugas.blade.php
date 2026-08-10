@@ -16,9 +16,13 @@
                         <tr wire:key="petugas-{{ $p->id }}" class="hover:bg-brand-light/40 dark:hover:bg-gray-700/40 transition-colors group">
                             <td class="py-3 px-4 md:py-4 md:px-6">
                                 <div class="flex items-center gap-2.5 md:gap-4">
-                                    <div class="w-9 h-9 md:w-11 md:h-11 rounded-full text-white flex items-center justify-center font-heading font-bold text-base md:text-lg shadow-md shrink-0" style="background-color: {{ $this->avatarColor($p->id) }}">
-                                        {{ strtoupper(mb_substr($p->anggota?->nama_lengkap ?? $p->name, 0, 1)) }}
-                                    </div>
+                                    @if ($p->anggota?->foto_dobok)
+                                        <img src="{{ asset($p->anggota->foto_dobok) }}" alt="Foto {{ $p->anggota->nama_lengkap }}" class="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover shadow-md shrink-0">
+                                    @else
+                                        <div class="w-9 h-9 md:w-11 md:h-11 rounded-full text-white flex items-center justify-center font-heading font-bold text-base md:text-lg shadow-md shrink-0" style="background-color: {{ $this->avatarColor($p->id) }}">
+                                            {{ strtoupper(mb_substr($p->anggota?->nama_lengkap ?? $p->name, 0, 1)) }}
+                                        </div>
+                                    @endif
                                     <div class="flex flex-col">
                                         <span class="font-bold text-gray-900 dark:text-white text-xs md:text-sm">{{ $p->anggota?->nama_lengkap ?? $p->name }}</span>
                                         <span class="text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">NIM: {{ $p->anggota?->nim ?? '-' }}</span>

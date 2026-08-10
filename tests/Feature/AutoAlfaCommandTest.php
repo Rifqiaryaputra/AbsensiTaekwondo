@@ -11,11 +11,13 @@ use App\Models\Jadwal;
 use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsFakultasProdi;
 use Tests\TestCase;
 
 class AutoAlfaCommandTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsFakultasProdi;
 
     private function hariIni(): string
     {
@@ -43,6 +45,8 @@ class AutoAlfaCommandTest extends TestCase
 
     private function anggota(string $nim, string $nama): Anggota
     {
+        [$fakultas, $prodi] = $this->fakultasProdi('FMIPA', 'Matematika');
+
         return Anggota::create([
             'id_anggota' => 'TKD'.substr($nim, 0, 2).'-'.substr($nim, -3),
             'nama_lengkap' => $nama,
@@ -50,8 +54,8 @@ class AutoAlfaCommandTest extends TestCase
             'tanggal_lahir' => '2003-01-01',
             'jenis_kelamin' => 'L',
             'no_whatsapp' => '08123',
-            'fakultas' => 'FMIPA',
-            'program_studi' => 'Matematika',
+            'fakultas_id' => $fakultas->id,
+            'program_studi_id' => $prodi->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
     }

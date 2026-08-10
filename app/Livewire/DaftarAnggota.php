@@ -5,8 +5,10 @@ namespace App\Livewire;
 use App\Exports\DatabaseAnggotaExport;
 use App\Imports\AnggotaImport;
 use App\Models\Anggota;
+use App\Models\Fakultas;
+use App\Models\ProgramStudi;
 use App\Services\AnggotaService;
-use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -56,9 +58,9 @@ class DaftarAnggota extends Component
 
     public string $wa = '';
 
-    public string $fakultas = '';
+    public string $fakultas_id = '';
 
-    public string $prodi = '';
+    public string $program_studi_id = '';
 
     public string $bpjs = '';
 
@@ -68,56 +70,12 @@ class DaftarAnggota extends Component
 
     public $foto;
 
-    public array $fakultasProdi = [
-        'Agama Islam' => ['Bahasa dan Sastra Arab', 'Ilmu Hadis', 'Pendidikan Agama Islam', 'Perbankan Syariah'],
-        'Bisnis dan Ekonomika' => ['Akuntansi', 'Bisnis Jasa Makanan', 'Ekonomi Pembangunan', 'Manajemen'],
-        'Hukum' => ['Hukum'],
-        'Keguruan dan Ilmu Pendidikan (FKIP)' => ['Bimbingan dan Konseling', 'Pendidikan Bahasa Inggris', 'Pendidikan Bahasa dan Sastra Indonesia', 'Pendidikan Biologi', 'Pendidikan Fisika', 'Pendidikan Guru Pendidikan Anak Usia Dini (PGPAUD)', 'Pendidikan Guru Sekolah Dasar (PGSD)', 'Pendidikan Matematika', 'Pendidikan Pancasila dan Kewarganegaraan', 'Pendidikan Profesi Guru'],
-        'Kesehatan Masyarakat' => ['Gizi', 'Kesehatan Masyarakat'],
-        'Matematika dan Ilmu Pengetahuan Alam (FMIPA)' => ['Biologi', 'Fisika', 'Matematika', 'Sistem Informasi'],
-        'Psikologi' => ['Psikologi'],
-        'Sastra, Budaya, dan Komunikasi' => ['Ilmu Komunikasi', 'Sastra Indonesia', 'Sastra Inggris'],
-        'Teknologi Industri' => ['Informatika', 'Teknik Elektro', 'Teknik Industri', 'Teknik Kimia', 'Teknologi Pangan'],
-        'Kedokteran' => ['Farmasi', 'Kedokteran Umum'],
-    ];
-
-    public function fakultasList(): array
+    public function updatedFakultasId(): void
     {
-        return array_keys($this->fakultasProdi);
+        $this->program_studi_id = '';
     }
 
-    public function prodiList(): array
-    {
-        return $this->fakultasProdi[$this->fakultas] ?? [];
-    }
-
-    public function prodiFilterList(): array
-    {
-        if ($this->fakultasFilter === '') {
-            $prodis = Arr::flatten($this->fakultasProdi);
-            $prodis = array_values(array_unique($prodis));
-            sort($prodis, SORT_STRING);
-
-            return $prodis;
-        }
-
-        return $this->fakultasProdi[$this->fakultasFilter] ?? [];
-    }
-
-    public function updatedFakultas(): void
-    {
-        if ($this->prodi !== '' && ! in_array($this->prodi, $this->prodiList(), true)) {
-            $this->prodi = '';
-        }
-    }
-
-    public function updatedFakultasFilter(): void
-    {
-        // Prodi filter bersifat independen: tidak di-reset saat fakultas berubah.
-        $this->resetPage();
-    }
-
-    protected function filteredQuery(): \Illuminate\Database\Eloquent\Builder
+    protected function filteredQuery(): Builder
     {
         $search = strtolower(trim($this->search));
 
@@ -129,12 +87,18 @@ class DaftarAnggota extends Component
                         ->orWhereRaw('LOWER(id_anggota) LIKE ?', ["%{$search}%"]);
                 });
             })
-            ->when($this->fakultasFilter !== '', fn ($query) => $query->where('fakultas', $this->fakultasFilter))
-            ->when($this->prodiFilter !== '', fn ($query) => $query->where('program_studi', $this->prodiFilter));
+            ->when($this->fakultasFilter !== '', fn ($query) => $query->where('fakultas_id', $this->fakultasFilter))
+            ->when($this->prodiFilter !== '', fn ($query) => $query->where('program_studi_id', $this->prodiFilter));
     }
 
     public function updatedSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedFakultasFilter(): void
+    {
+        $this->prodiFilter = '';
         $this->resetPage();
     }
 
@@ -172,8 +136,8 @@ class DaftarAnggota extends Component
         $this->tglLahir = $item->tanggal_lahir?->format('Y-m-d') ?? '';
         $this->jk = $item->jenis_kelamin;
         $this->wa = $item->no_whatsapp ?? '';
-        $this->fakultas = $item->fakultas;
-        $this->prodi = $item->program_studi;
+        $this->fakultas_id = (string) $item->fakultas_id;
+        $this->program_studi_id = (string) $item->program_studi_id;
         $this->bpjs = $item->no_bpjs ?? '';
         $this->status_anggota = $item->status_anggota ?? Anggota::STATUS_AKTIF;
         $this->showForm = true;
@@ -199,8 +163,8 @@ class DaftarAnggota extends Component
             'tglLahir' => ['required', 'date'],
             'jk' => ['required', Rule::in(['L', 'P'])],
             'wa' => ['required', 'numeric', 'starts_with:62', 'digits_between:10,15'],
-            'fakultas' => ['required', Rule::in($this->fakultasList())],
-            'prodi' => ['required', Rule::in($this->prodiList())],
+            'fakultas_id' => ['required', 'integer', Rule::exists('fakultas', 'id')],
+            'program_studi_id' => ['required', 'integer', Rule::exists('program_studi', 'id')->where('fakultas_id', (int) $this->fakultas_id)],
             'bpjs' => ['nullable', 'string', 'max:50'],
             'status_anggota' => ['required', Rule::in(Anggota::statusList())],
             'foto' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
@@ -239,8 +203,8 @@ class DaftarAnggota extends Component
             'tanggal_lahir' => $this->tglLahir,
             'jenis_kelamin' => $this->jk,
             'no_whatsapp' => $this->wa,
-            'fakultas' => $this->fakultas,
-            'program_studi' => $this->prodi,
+            'fakultas_id' => (int) $this->fakultas_id,
+            'program_studi_id' => (int) $this->program_studi_id,
             'no_bpjs' => $this->bpjs !== '' ? $this->bpjs : null,
             'status_anggota' => $this->status_anggota,
             'qr_code' => $qrCode,
@@ -269,8 +233,8 @@ class DaftarAnggota extends Component
         $anggota->tanggal_lahir = $this->tglLahir;
         $anggota->jenis_kelamin = $this->jk;
         $anggota->no_whatsapp = $this->wa;
-        $anggota->fakultas = $this->fakultas;
-        $anggota->program_studi = $this->prodi;
+        $anggota->fakultas_id = (int) $this->fakultas_id;
+        $anggota->program_studi_id = (int) $this->program_studi_id;
         $anggota->no_bpjs = $this->bpjs !== '' ? $this->bpjs : null;
         $anggota->status_anggota = $this->status_anggota;
 
@@ -341,10 +305,9 @@ class DaftarAnggota extends Component
      */
     public function isIncomplete(Anggota $member): bool
     {
-        $prodi = trim((string) $member->program_studi);
+        $prodiValid = $member->programStudi !== null;
         $wa = (string) $member->no_whatsapp;
 
-        $prodiValid = $prodi !== '' && $prodi !== '-';
         $waValid = preg_match('/^62\d{8,13}$/', $wa) === 1;
 
         return ! $prodiValid || ! $waValid;
@@ -409,8 +372,8 @@ class DaftarAnggota extends Component
         $this->tglLahir = '';
         $this->jk = '';
         $this->wa = '';
-        $this->fakultas = '';
-        $this->prodi = '';
+        $this->fakultas_id = '';
+        $this->program_studi_id = '';
         $this->bpjs = '';
         $this->status_anggota = Anggota::STATUS_AKTIF;
     }
@@ -420,6 +383,11 @@ class DaftarAnggota extends Component
         return view('livewire.daftar-anggota', [
             'members' => $this->filteredQuery()->orderBy('id_anggota')->paginate($this->perPage),
             'total' => $this->filteredQuery()->count(),
+            'listFakultas' => Fakultas::all(),
+            'listProdi' => ProgramStudi::where('fakultas_id', $this->fakultas_id)->get(),
+            'listProdiFilter' => $this->fakultasFilter !== ''
+                ? ProgramStudi::where('fakultas_id', $this->fakultasFilter)->get()
+                : ProgramStudi::all(),
         ]);
     }
 }

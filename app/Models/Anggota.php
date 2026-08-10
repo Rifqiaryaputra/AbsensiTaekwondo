@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -27,8 +28,8 @@ class Anggota extends Model
         'jenis_kelamin',
         'no_whatsapp',
         'foto_dobok',
-        'fakultas',
-        'program_studi',
+        'fakultas_id',
+        'program_studi_id',
         'no_bpjs',
         'status_anggota',
         'qr_code',
@@ -54,6 +55,16 @@ class Anggota extends Model
     {
         // Selalu kembalikan akun ANGGOTA (bukan akun petugas terpisah yang mungkin dibuat).
         return $this->hasOne(User::class)->where('role', User::ROLE_ANGGOTA);
+    }
+
+    public function fakultas(): BelongsTo
+    {
+        return $this->belongsTo(Fakultas::class);
+    }
+
+    public function programStudi(): BelongsTo
+    {
+        return $this->belongsTo(ProgramStudi::class);
     }
 
     public function absensi(): HasMany

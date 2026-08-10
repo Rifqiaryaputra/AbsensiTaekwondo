@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\AbsensiScan;
-use App\Models\Absensi;
 use App\Models\Anggota;
 use App\Models\HariLibur;
 use App\Models\Jadwal;
@@ -12,11 +11,13 @@ use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\SeedsFakultasProdi;
 use Tests\TestCase;
 
 class AbsensiScanTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsFakultasProdi;
 
     private function hariIni(): string
     {
@@ -28,8 +29,12 @@ class AbsensiScanTest extends TestCase
         $now = Carbon::now();
         $start = $now->copy()->subHour()->format('H:i:s');
         $end = $now->copy()->addHour()->format('H:i:s');
-        if ($now->copy()->subHour()->isYesterday()) { $start = '00:00:00'; }
-        if ($now->copy()->addHour()->isTomorrow()) { $end = '23:59:59'; }
+        if ($now->copy()->subHour()->isYesterday()) {
+            $start = '00:00:00';
+        }
+        if ($now->copy()->addHour()->isTomorrow()) {
+            $end = '23:59:59';
+        }
 
         return Jadwal::create([
             'hari' => $this->hariIni(),
@@ -40,6 +45,8 @@ class AbsensiScanTest extends TestCase
 
     private function anggota(string $nim, string $nama): Anggota
     {
+        [$fakultas, $prodi] = $this->fakultasProdi('FMIPA', 'Matematika');
+
         return Anggota::create([
             'id_anggota' => 'TKD'.substr($nim, 0, 2).'-'.substr($nim, -3),
             'nama_lengkap' => $nama,
@@ -47,8 +54,8 @@ class AbsensiScanTest extends TestCase
             'tanggal_lahir' => '2003-01-01',
             'jenis_kelamin' => 'L',
             'no_whatsapp' => '08123',
-            'fakultas' => 'FMIPA',
-            'program_studi' => 'Matematika',
+            'fakultas_id' => $fakultas->id,
+            'program_studi_id' => $prodi->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
     }

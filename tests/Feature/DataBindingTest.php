@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Exports\RekapKehadiranExport;
-use App\Http\Controllers\DashboardController;
 use App\Livewire\DaftarAnggota;
 use App\Livewire\DashboardStats;
 use App\Livewire\KelolaHariLibur;
@@ -13,22 +12,29 @@ use App\Livewire\RekapKehadiran;
 use App\Livewire\SettingsProfil;
 use App\Models\Absensi;
 use App\Models\Anggota;
+use App\Models\Fakultas;
 use App\Models\HariLibur;
 use App\Models\Jadwal;
 use App\Models\PengaturanProfil;
+use App\Models\ProgramStudi;
 use App\Models\User;
 use App\Services\AnggotaService;
+use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Tests\Concerns\SeedsFakultasProdi;
 use Tests\TestCase;
 
 class DataBindingTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsFakultasProdi;
 
     private function admin(): User
     {
@@ -37,6 +43,7 @@ class DataBindingTest extends TestCase
 
     private function anggotaUser(string $nim = '220011501', string $nama = 'Anggota DB'): array
     {
+        [$fakultas, $prodi] = $this->fakultasProdi('FMIPA', 'Matematika');
         $anggota = Anggota::create([
             'id_anggota' => 'TKD'.substr($nim, 0, 2).'-'.substr($nim, -3),
             'nama_lengkap' => $nama,
@@ -44,8 +51,8 @@ class DataBindingTest extends TestCase
             'tanggal_lahir' => '2003-01-01',
             'jenis_kelamin' => 'L',
             'no_whatsapp' => '08123',
-            'fakultas' => 'FMIPA',
-            'program_studi' => 'Matematika',
+            'fakultas_id' => $fakultas->id,
+            'program_studi_id' => $prodi->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
         $user = User::factory()->create(['role' => User::ROLE_ANGGOTA, 'anggota_id' => $anggota->id]);
@@ -57,6 +64,7 @@ class DataBindingTest extends TestCase
     {
         $this->actingAs($this->admin());
         $nama = 'Anggota Baru Test';
+        [$fakultas, $prodi] = $this->fakultasProdi('Matematika dan Ilmu Pengetahuan Alam (FMIPA)', 'Matematika');
 
         Livewire::test(DaftarAnggota::class)
             ->set('nama', $nama)
@@ -64,8 +72,8 @@ class DataBindingTest extends TestCase
             ->set('tglLahir', '2003-05-15')
             ->set('jk', 'L')
             ->set('wa', '6281234567890')
-            ->set('fakultas', 'Matematika dan Ilmu Pengetahuan Alam (FMIPA)')
-            ->set('prodi', 'Matematika')
+            ->set('fakultas_id', (string) $fakultas->id)
+            ->set('program_studi_id', (string) $prodi->id)
             ->call('save')
             ->assertHasNoErrors()
             ->assertSee($nama);
@@ -112,7 +120,7 @@ class DataBindingTest extends TestCase
         $this->assertNotNull($petugas);
         $this->assertSame(User::ROLE_PETUGAS, $petugas->role);
         $this->assertSame($anggota->id, $petugas->anggota_id);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('secret123', $petugas->password));
+        $this->assertTrue(Hash::check('secret123', $petugas->password));
 
         // Hapus petugas -> HANYA akun petugas yang dihapus
         Livewire::test(KelolaPetugas::class)
@@ -243,6 +251,7 @@ class DataBindingTest extends TestCase
     public function test_daftar_anggota_edit_hydrates_form(): void
     {
         $this->actingAs($this->admin());
+        [$fakultas, $prodi] = $this->fakultasProdi('Sastra, Budaya, dan Komunikasi', 'Ilmu Komunikasi');
         $anggota = Anggota::create([
             'id_anggota' => 'TKD22-601',
             'nama_lengkap' => 'Edit Hydrate',
@@ -250,8 +259,8 @@ class DataBindingTest extends TestCase
             'tanggal_lahir' => '2002-07-19',
             'jenis_kelamin' => 'P',
             'no_whatsapp' => '6281377889900',
-            'fakultas' => 'Sastra, Budaya, dan Komunikasi',
-            'program_studi' => 'Ilmu Komunikasi',
+            'fakultas_id' => $fakultas->id,
+            'program_studi_id' => $prodi->id,
             'no_bpjs' => '123456',
             'qr_code' => 'qr-codes/test.svg',
         ]);
@@ -265,8 +274,8 @@ class DataBindingTest extends TestCase
             ->assertSet('tglLahir', '2002-07-19')
             ->assertSet('jk', 'P')
             ->assertSet('wa', '6281377889900')
-            ->assertSet('fakultas', 'Sastra, Budaya, dan Komunikasi')
-            ->assertSet('prodi', 'Ilmu Komunikasi')
+            ->assertSet('fakultas_id', (string) $fakultas->id)
+            ->assertSet('program_studi_id', (string) $prodi->id)
             ->assertSet('bpjs', '123456');
     }
 
@@ -294,6 +303,7 @@ class DataBindingTest extends TestCase
     public function test_daftar_anggota_rejects_invalid_nim_and_wa(): void
     {
         $this->actingAs($this->admin());
+        [$fakultas, $prodi] = $this->fakultasProdi('Matematika dan Ilmu Pengetahuan Alam (FMIPA)', 'Matematika');
 
         Livewire::test(DaftarAnggota::class)
             ->set('nama', 'Anggota Invalid')
@@ -301,8 +311,8 @@ class DataBindingTest extends TestCase
             ->set('tglLahir', '2003-05-15')
             ->set('jk', 'L')
             ->set('wa', '0812345678')
-            ->set('fakultas', 'Matematika dan Ilmu Pengetahuan Alam (FMIPA)')
-            ->set('prodi', 'Matematika')
+            ->set('fakultas_id', (string) $fakultas->id)
+            ->set('program_studi_id', (string) $prodi->id)
             ->call('save')
             ->assertHasErrors(['nim', 'wa']);
 
@@ -312,6 +322,7 @@ class DataBindingTest extends TestCase
     public function test_daftar_anggota_formats_nama_to_title_case(): void
     {
         $this->actingAs($this->admin());
+        [$fakultas, $prodi] = $this->fakultasProdi('Hukum', 'Hukum');
 
         Livewire::test(DaftarAnggota::class)
             ->set('nama', 'anggota kecil')
@@ -319,8 +330,8 @@ class DataBindingTest extends TestCase
             ->set('tglLahir', '2003-05-15')
             ->set('jk', 'L')
             ->set('wa', '6281234567890')
-            ->set('fakultas', 'Hukum')
-            ->set('prodi', 'Hukum')
+            ->set('fakultas_id', (string) $fakultas->id)
+            ->set('program_studi_id', (string) $prodi->id)
             ->call('save')
             ->assertHasNoErrors();
 
@@ -334,16 +345,19 @@ class DataBindingTest extends TestCase
 
     public function test_incomplete_member_is_flagged(): void
     {
+        [$fakultas, $prodi] = $this->fakultasProdi('Matematika dan Ilmu Pengetahuan Alam (FMIPA)', 'Matematika');
+        [$fakultasIncomplete] = $this->fakultasProdi('Hukum', 'Hukum');
+
         $complete = Anggota::create([
             'id_anggota' => 'TKD22-701', 'nama_lengkap' => 'Lengkap', 'nim' => '2200177010',
             'tanggal_lahir' => '2003-01-01', 'jenis_kelamin' => 'L', 'no_whatsapp' => '6281234567890',
-            'fakultas' => 'Matematika dan Ilmu Pengetahuan Alam (FMIPA)', 'program_studi' => 'Matematika',
+            'fakultas_id' => $fakultas->id, 'program_studi_id' => $prodi->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
         $incomplete = Anggota::create([
             'id_anggota' => 'TKD22-702', 'nama_lengkap' => 'Tidak Lengkap', 'nim' => '2200177020',
             'tanggal_lahir' => '2003-01-01', 'jenis_kelamin' => 'L', 'no_whatsapp' => '0812345678',
-            'fakultas' => 'Hukum', 'program_studi' => '-',
+            'fakultas_id' => $fakultasIncomplete->id, 'program_studi_id' => null,
             'qr_code' => 'qr-codes/test.svg',
         ]);
 
@@ -355,6 +369,7 @@ class DataBindingTest extends TestCase
     public function test_member_visible_after_refresh_and_edit_renders_values(): void
     {
         $this->actingAs($this->admin());
+        [$fakultas, $prodi] = $this->fakultasProdi('Hukum', 'Hukum');
         $anggota = Anggota::create([
             'id_anggota' => 'TKD22-705',
             'nama_lengkap' => 'Refresh Member',
@@ -362,8 +377,8 @@ class DataBindingTest extends TestCase
             'tanggal_lahir' => '2002-03-11',
             'jenis_kelamin' => 'P',
             'no_whatsapp' => '6281234567890',
-            'fakultas' => 'Hukum',
-            'program_studi' => 'Hukum',
+            'fakultas_id' => $fakultas->id,
+            'program_studi_id' => $prodi->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
 
@@ -378,13 +393,14 @@ class DataBindingTest extends TestCase
             ->assertSet('editingId', $anggota->id)
             ->assertSet('nama', 'Refresh Member')
             ->assertSet('nim', '2200177050')
-            ->assertSet('fakultas', 'Hukum')
-            ->assertSet('prodi', 'Hukum')
+            ->assertSet('fakultas_id', (string) $fakultas->id)
+            ->assertSet('program_studi_id', (string) $prodi->id)
             ->assertSeeHtml('value="Refresh Member"')
             ->assertSeeHtml('value="2200177050"')
             ->assertSeeHtml('value="6281234567890"')
             ->assertSeeHtml('value="2002-03-11"')
-            ->assertSeeHtml('value="Hukum" selected')
+            ->assertSeeHtml('value="'.$fakultas->id.'" selected')
+            ->assertSeeHtml('value="'.$prodi->id.'" selected')
             ->assertSeeHtml('>Hukum</option>');
     }
 
@@ -404,21 +420,31 @@ class DataBindingTest extends TestCase
     public function test_dependent_prodi_populates_after_fakultas(): void
     {
         $this->actingAs($this->admin());
+        [$fakultas] = $this->fakultasProdi('Teknologi Industri', 'Informatika');
+        $pdElektro = ProgramStudi::create(['fakultas_id' => $fakultas->id, 'nama_prodi' => 'Teknik Elektro']);
+        [$fakultasHukum, $pdHukum] = $this->fakultasProdi('Hukum', 'Hukum');
 
         Livewire::test(DaftarAnggota::class)
-            ->set('fakultas', 'Hukum')
-            ->assertSet('prodi', '')
-            ->assertSeeHtml('<option value="Hukum">Hukum</option>');
+            ->set('fakultasFilter', (string) $fakultas->id)
+            ->set('fakultas_id', (string) $fakultas->id)
+            ->assertSet('program_studi_id', '')
+            ->assertSeeHtml('value="'.$pdElektro->id.'" >Teknik Elektro</option>')
+            ->assertDontSeeHtml('value="'.$pdHukum->id.'" >Hukum</option>');
 
+        // Ganti fakultas -> prodi ikut di-reset & opsi menyesuaikan
         Livewire::test(DaftarAnggota::class)
-            ->set('fakultas', 'Teknologi Industri')
-            ->assertSeeHtml('value="Informatika"')
-            ->assertSeeHtml('value="Teknik Elektro"');
+            ->set('fakultasFilter', (string) $fakultasHukum->id)
+            ->set('program_studi_id', (string) $pdElektro->id)
+            ->set('fakultas_id', (string) $fakultasHukum->id)
+            ->assertSet('program_studi_id', '')
+            ->assertSeeHtml('value="'.$pdHukum->id.'" >Hukum</option>')
+            ->assertDontSeeHtml('value="'.$pdElektro->id.'" >Teknik Elektro</option>');
     }
 
     public function test_pagination_prev_next_works(): void
     {
         $this->actingAs($this->admin());
+        [$fakultas, $prodi] = $this->fakultasProdi('Hukum', 'Hukum');
 
         foreach (range(1, 12) as $i) {
             Anggota::create([
@@ -428,8 +454,8 @@ class DataBindingTest extends TestCase
                 'tanggal_lahir' => '2003-01-01',
                 'jenis_kelamin' => 'L',
                 'no_whatsapp' => '6281234567890',
-                'fakultas' => 'Hukum',
-                'program_studi' => 'Hukum',
+                'fakultas_id' => $fakultas->id,
+                'program_studi_id' => $prodi->id,
                 'qr_code' => 'qr-codes/test.svg',
             ]);
         }
@@ -454,32 +480,35 @@ class DataBindingTest extends TestCase
             ->assertSeeHtml('wire:click="previousPage" disabled');
     }
 
-    public function test_prodi_filter_is_independent_of_fakultas(): void
+    public function test_prodi_filter_depends_on_fakultas(): void
     {
         $this->actingAs($this->admin());
+        [$fakultasMipa, $prodiMat] = $this->fakultasProdi('Matematika dan Ilmu Pengetahuan Alam (FMIPA)', 'Matematika');
+        [$fakultasHukum, $prodiHukum] = $this->fakultasProdi('Hukum', 'Hukum');
 
         Anggota::create([
             'id_anggota' => 'TKD22-801', 'nama_lengkap' => 'Anggota Matematika', 'nim' => '2200280100',
             'tanggal_lahir' => '2003-01-01', 'jenis_kelamin' => 'L', 'no_whatsapp' => '6281234567890',
-            'fakultas' => 'Matematika dan Ilmu Pengetahuan Alam (FMIPA)', 'program_studi' => 'Matematika',
+            'fakultas_id' => $fakultasMipa->id, 'program_studi_id' => $prodiMat->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
         Anggota::create([
             'id_anggota' => 'TKD22-802', 'nama_lengkap' => 'Anggota Hukum', 'nim' => '2200280200',
             'tanggal_lahir' => '2003-01-01', 'jenis_kelamin' => 'L', 'no_whatsapp' => '6281234567890',
-            'fakultas' => 'Hukum', 'program_studi' => 'Hukum',
+            'fakultas_id' => $fakultasHukum->id, 'program_studi_id' => $prodiHukum->id,
             'qr_code' => 'qr-codes/test.svg',
         ]);
 
-        // Daftar prodi filter tanpa memilih fakultas = semua prodi (flatten)
-        $component = new DaftarAnggota;
-        $prodis = $component->prodiFilterList();
-        $this->assertContains('Matematika', $prodis);
-        $this->assertContains('Hukum', $prodis);
-
-        // Filter prodi berjalan independen tanpa perlu memilih fakultas
+        // Pilih fakultas -> daftar prodi filter menyempit + filter prodi di-reset
         Livewire::test(DaftarAnggota::class)
-            ->set('prodiFilter', 'Matematika')
+            ->set('fakultasFilter', (string) $fakultasMipa->id)
+            ->assertSet('prodiFilter', '')
+            ->assertSeeHtml('value="'.$prodiMat->id.'" >Matematika</option>');
+
+        // Filter prodi berjalan dalam lingkup fakultas yang dipilih
+        Livewire::test(DaftarAnggota::class)
+            ->set('fakultasFilter', (string) $fakultasMipa->id)
+            ->set('prodiFilter', (string) $prodiMat->id)
             ->assertSee('>Anggota Matematika<', false)
             ->assertDontSee('>Anggota Hukum<', false);
     }
@@ -623,7 +652,7 @@ class DataBindingTest extends TestCase
             ->assertSet('existingLogoKiri', $profil->logo_unit_kegiatan);
 
         if ($profil->logo_unit_kegiatan) {
-            \Illuminate\Support\Facades\File::delete(public_path($profil->logo_unit_kegiatan));
+            File::delete(public_path($profil->logo_unit_kegiatan));
         }
     }
 
@@ -656,7 +685,7 @@ class DataBindingTest extends TestCase
     public function test_total_latihan_excludes_holidays(): void
     {
         $this->actingAs($this->admin());
-        $svc = app(\App\Services\JadwalService::class);
+        $svc = app(JadwalService::class);
         $start = Carbon::now()->startOfMonth();
         $end = Carbon::now()->endOfMonth();
 
@@ -706,7 +735,7 @@ class DataBindingTest extends TestCase
         $this->assertSame('#ef4444', $data['datasets'][3]['backgroundColor']);
 
         // Label sumbu-X terformat "Sen, 3 Agu"
-        \Carbon\Carbon::setLocale('id');
+        Carbon::setLocale('id');
         $shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         $label = $today->translatedFormat('D, j').' '.$shortMonths[$today->month - 1];
         $idx = array_search($label, $data['labels']);

@@ -19,14 +19,14 @@
             <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <select wire:model.live="fakultasFilter" class="w-full sm:w-auto md:w-44 px-4 py-3.5 md:py-3 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl font-medium text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 transition-all appearance-none cursor-pointer">
                     <option value="">Semua Fakultas</option>
-                    @foreach ($this->fakultasList() as $fak)
-                        <option value="{{ $fak }}">{{ $fak }}</option>
+                    @foreach ($listFakultas as $fak)
+                        <option value="{{ $fak->id }}" @selected((string) $fakultasFilter === (string) $fak->id)>{{ $fak->nama_fakultas }}</option>
                     @endforeach
                 </select>
                 <select wire:model.live="prodiFilter" class="w-full sm:w-auto md:w-44 px-4 py-3.5 md:py-3 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl font-medium text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 transition-all appearance-none cursor-pointer">
                     <option value="">Semua Prodi</option>
-                    @foreach ($this->prodiFilterList() as $p)
-                        <option value="{{ $p }}">{{ $p }}</option>
+                    @foreach ($listProdiFilter as $p)
+                        <option value="{{ $p->id }}" @selected((string) $prodiFilter === (string) $p->id)>{{ $p->nama_prodi }}</option>
                     @endforeach
                 </select>
                 <button wire:click="resetFilters"
@@ -91,8 +91,8 @@
                             </td>
                             <td class="py-4 px-6">
                                 <div class="flex flex-col">
-                                    <span class="font-bold text-gray-900 dark:text-white text-sm">{{ $member->fakultas }}</span>
-                                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{{ $member->program_studi }}</span>
+                                    <span class="font-bold text-gray-900 dark:text-white text-sm">{{ $member->fakultas?->nama_fakultas ?? '-' }}</span>
+                                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{{ $member->programStudi?->nama_prodi ?? '-' }}</span>
                                 </div>
                             </td>
                             <td class="py-4 px-6 text-right">
@@ -210,29 +210,23 @@
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Fakultas <span class="text-red-500">*</span></label>
-                            <select wire:model.live="fakultas" required class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue outline-none transition-all appearance-none cursor-pointer">
-                                <option value="" disabled hidden @selected($fakultas === '')>Pilih Fakultas</option>
-                                @if ($editingId && ! in_array($fakultas, $this->fakultasList(), true))
-                                    <option value="{{ $fakultas }}" selected>{{ $fakultas }}</option>
-                                @endif
-                                @foreach ($this->fakultasList() as $fak)
-                                    <option value="{{ $fak }}" @selected($fakultas === $fak)>{{ $fak }}</option>
+                            <select wire:model.live="fakultas_id" required class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue outline-none transition-all appearance-none cursor-pointer">
+                                <option value="" disabled hidden @selected($fakultas_id === '')>Pilih Fakultas</option>
+                                @foreach ($listFakultas as $fak)
+                                    <option value="{{ $fak->id }}" @selected((string) $fakultas_id === (string) $fak->id)>{{ $fak->nama_fakultas }}</option>
                                 @endforeach
                             </select>
-                            @error('fakultas') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            @error('fakultas_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Program Studi <span class="text-red-500">*</span></label>
-                            <select wire:model.live="prodi" required class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue outline-none transition-all appearance-none cursor-pointer">
-                                <option value="" disabled hidden @selected($prodi === '')>Pilih Program Studi</option>
-                                @if ($editingId && $prodi !== '' && ! in_array($prodi, $this->prodiList(), true))
-                                    <option value="{{ $prodi }}" selected>{{ $prodi }}</option>
-                                @endif
-                                @foreach ($this->prodiList() as $p)
-                                    <option value="{{ $p }}" @selected($prodi === $p)>{{ $p }}</option>
+                            <select wire:model.live="program_studi_id" required class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue outline-none transition-all appearance-none cursor-pointer">
+                                <option value="" disabled hidden @selected($program_studi_id === '')>Pilih Program Studi</option>
+                                @foreach ($listProdi as $p)
+                                    <option value="{{ $p->id }}" @selected((string) $program_studi_id === (string) $p->id)>{{ $p->nama_prodi }}</option>
                                 @endforeach
                             </select>
-                            @error('prodi') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            @error('program_studi_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">No. BPJS (Opsional)</label>
@@ -328,7 +322,7 @@
                         <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-sm">
                             <div>
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider font-bold mb-1.5">Fakultas / Prodi</p>
-                                <p class="font-semibold text-gray-900 dark:text-white">{{ $viewed->fakultas }} · {{ $viewed->program_studi }}</p>
+                                <p class="font-semibold text-gray-900 dark:text-white">{{ $viewed->fakultas?->nama_fakultas ?? '-' }} · {{ $viewed->programStudi?->nama_prodi ?? '-' }}</p>
                             </div>
                             <div>
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider font-bold mb-1.5">No. WhatsApp</p>

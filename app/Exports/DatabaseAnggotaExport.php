@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Anggota;
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -13,10 +14,9 @@ class DatabaseAnggotaExport implements FromQuery, WithHeadings, WithMapping
         protected string $search = '',
         protected string $fakultas = '',
         protected string $prodi = ''
-    ) {
-    }
+    ) {}
 
-    public function query(): \Illuminate\Database\Eloquent\Builder
+    public function query(): Builder
     {
         $search = strtolower(trim($this->search));
 
@@ -28,8 +28,8 @@ class DatabaseAnggotaExport implements FromQuery, WithHeadings, WithMapping
                         ->orWhereRaw('LOWER(id_anggota) LIKE ?', ["%{$search}%"]);
                 });
             })
-            ->when($this->fakultas !== '', fn ($query) => $query->where('fakultas', $this->fakultas))
-            ->when($this->prodi !== '', fn ($query) => $query->where('program_studi', $this->prodi))
+            ->when($this->fakultas !== '', fn ($query) => $query->where('fakultas_id', $this->fakultas))
+            ->when($this->prodi !== '', fn ($query) => $query->where('program_studi_id', $this->prodi))
             ->orderBy('id_anggota');
     }
 
@@ -57,8 +57,8 @@ class DatabaseAnggotaExport implements FromQuery, WithHeadings, WithMapping
             $row->tanggal_lahir?->format('Y-m-d'),
             $row->jenis_kelamin,
             $row->no_whatsapp,
-            $row->fakultas,
-            $row->program_studi,
+            $row->fakultas?->nama_fakultas,
+            $row->programStudi?->nama_prodi,
             $row->no_bpjs,
         ];
     }
