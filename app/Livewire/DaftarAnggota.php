@@ -9,6 +9,7 @@ use App\Services\AnggotaService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -254,21 +255,16 @@ class DaftarAnggota extends Component
         $anggota = Anggota::findOrFail($this->editingId);
         $nimBerubah = $anggota->nim !== $this->nim;
 
-        if ($nimBerubah) {
-            // Regenerasi identitas + QR + email login bila NIM diubah.
-            $service->deleteFile($anggota->qr_code);
-            $idAnggota = $service->generateIdAnggota($this->nim);
-            $anggota->id_anggota = $idAnggota;
-            $anggota->qr_code = $service->generateQrCode($idAnggota);
-
-            if ($anggota->user) {
-                $anggota->user->update([
-                    'name' => $this->nama,
-                    'email' => $this->nim.'@webmail.uad.ac.id',
-                ]);
-            }
+        if ($nimBerubah && $anggota->user) {
+            // Akun login sinkron dengan NIM baru; id_anggota & QR tetap.
+            $anggota->user->update([
+                'name' => $this->nama,
+                'email' => $this->nim.'@webmail.uad.ac.id',
+                'password' => Hash::make($this->nim),
+            ]);
         }
 
+        $anggota->nim = $this->nim;
         $anggota->nama_lengkap = $this->nama;
         $anggota->tanggal_lahir = $this->tglLahir;
         $anggota->jenis_kelamin = $this->jk;

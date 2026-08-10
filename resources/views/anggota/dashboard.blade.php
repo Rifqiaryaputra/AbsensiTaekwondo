@@ -20,8 +20,20 @@
                             <span class="font-heading font-extrabold text-4xl text-brand-blue dark:text-brand-light">{{ $anggota['inisial'] }}</span>
                         @endif
                     </div>
-                    <div class="mt-[-12px] relative z-20 bg-status-hadir-bg dark:bg-green-900/40 text-status-hadir-text dark:text-green-400 border border-green-100 dark:border-green-800 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors">
-                        <span class="w-1.5 h-1.5 rounded-full bg-status-hadir-text dark:bg-green-400 animate-pulse"></span> Anggota Aktif
+                    @php
+                        $statusBadge = [
+                            \App\Models\Anggota::STATUS_AKTIF => ['Anggota Aktif', 'bg-status-hadir-bg dark:bg-green-900/40 text-status-hadir-text dark:text-green-400 border-green-100 dark:border-green-800'],
+                            \App\Models\Anggota::STATUS_ALUMNI => ['Alumni', 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-800'],
+                            \App\Models\Anggota::STATUS_NON_AKTIF => ['Non-Aktif', 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-600'],
+                        ];
+                        $statusLabel = $statusBadge[$anggota['status']][0] ?? 'Non-Aktif';
+                        $statusClass = $statusBadge[$anggota['status']][1] ?? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-600';
+                    @endphp
+                    <div class="mt-[-12px] relative z-20 {{ $statusClass }} border px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors">
+                        @if ($anggota['status'] === \App\Models\Anggota::STATUS_AKTIF)
+                            <span class="w-1.5 h-1.5 rounded-full bg-status-hadir-text dark:bg-green-400 animate-pulse"></span>
+                        @endif
+                        {{ $statusLabel }}
                     </div>
                 </div>
 

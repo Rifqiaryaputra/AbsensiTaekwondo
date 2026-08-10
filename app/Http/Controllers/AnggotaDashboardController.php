@@ -26,6 +26,7 @@ class AnggotaDashboardController extends Controller
                 'foto' => $anggotaModel->foto_dobok,
                 'qr_code' => $anggotaModel->qr_code,
                 'inisial' => strtoupper(mb_substr($anggotaModel->nama_lengkap, 0, 1)),
+                'status' => $anggotaModel->status_anggota,
             ]
             : [
                 'nama' => 'Anggota',
@@ -34,6 +35,7 @@ class AnggotaDashboardController extends Controller
                 'foto' => null,
                 'qr_code' => null,
                 'inisial' => '?',
+                'status' => \App\Models\Anggota::STATUS_AKTIF,
             ];
 
         [$statistik, $riwayat, $bulanList] = $this->rekapPresensi($anggotaModel?->id);

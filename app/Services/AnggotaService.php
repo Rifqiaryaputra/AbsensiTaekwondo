@@ -15,7 +15,7 @@ class AnggotaService
     public const FOTO_DIR = 'dobok-photos';
 
     /**
-     * Generate ID Anggota dengan format TKD{2 digit awal NIM}-{nomor urut global 3 digit}.
+     * Generate ID Anggota berformat TKD{angkatan}-{nomor urut}, nomor urut reset per angkatan.
      */
     public function generateIdAnggota(string $nim): string
     {
@@ -24,13 +24,19 @@ class AnggotaService
         }
 
         $angkatan = substr($nim, 0, 2);
+        $prefix = 'TKD'.$angkatan.'-';
 
-        // Nomor urut global = seq terbesar yang pernah ada + 1 (tidak reuse setelah hapus).
-        $seq = Anggota::query()->pluck('id_anggota')
-            ->map(fn (string $id) => (int) substr($id, -3))
-            ->max() ?? 0;
+        $lastAnggota = Anggota::query()
+            ->where('id_anggota', 'LIKE', $prefix.'%')
+            ->orderBy('id_anggota', 'desc')
+            ->first();
 
-        return sprintf('TKD%s-%03d', $angkatan, $seq + 1);
+        $nextNumber = 1;
+        if ($lastAnggota) {
+            $nextNumber = ((int) substr($lastAnggota->id_anggota, -3)) + 1;
+        }
+
+        return $prefix.sprintf('%03d', $nextNumber);
     }
 
     /**
