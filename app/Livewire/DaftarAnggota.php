@@ -157,18 +157,31 @@ class DaftarAnggota extends Component
         $this->nama = ucwords(trim($this->nama));
         $this->wa = trim($this->wa);
 
-        $this->validate([
+        $isEdit = $this->editingId !== null;
+
+        $rules = [
             'nama' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.\']+$/'],
             'nim' => ['required', 'numeric', 'digits:10', Rule::unique('anggota', 'nim')->ignore($this->editingId)],
-            'tglLahir' => ['required', 'date'],
-            'jk' => ['required', Rule::in(['L', 'P'])],
-            'wa' => ['required', 'numeric', 'starts_with:62', 'digits_between:10,15'],
-            'fakultas_id' => ['required', 'integer', Rule::exists('fakultas', 'id')],
-            'program_studi_id' => ['required', 'integer', Rule::exists('program_studi', 'id')->where('fakultas_id', (int) $this->fakultas_id)],
             'bpjs' => ['nullable', 'string', 'max:50'],
             'status_anggota' => ['required', Rule::in(Anggota::statusList())],
             'foto' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
-        ]);
+        ];
+
+        if ($isEdit) {
+            $rules['tglLahir'] = ['nullable', Rule::when($this->tglLahir !== '', ['date'])];
+            $rules['jk'] = ['nullable', Rule::when($this->jk !== '', [Rule::in(['L', 'P'])])];
+            $rules['wa'] = ['nullable', Rule::when($this->wa !== '', ['numeric', 'starts_with:62', 'digits_between:10,15'])];
+            $rules['fakultas_id'] = ['nullable', Rule::when($this->fakultas_id !== '', ['integer', Rule::exists('fakultas', 'id')])];
+            $rules['program_studi_id'] = ['nullable', Rule::when($this->program_studi_id !== '', ['integer', Rule::exists('program_studi', 'id')->where('fakultas_id', (int) $this->fakultas_id)])];
+        } else {
+            $rules['tglLahir'] = ['required', 'date'];
+            $rules['jk'] = ['required', Rule::in(['L', 'P'])];
+            $rules['wa'] = ['required', 'numeric', 'starts_with:62', 'digits_between:10,15'];
+            $rules['fakultas_id'] = ['required', 'integer', Rule::exists('fakultas', 'id')];
+            $rules['program_studi_id'] = ['required', 'integer', Rule::exists('program_studi', 'id')->where('fakultas_id', (int) $this->fakultas_id)];
+        }
+
+        $this->validate($rules);
 
         $service = app(AnggotaService::class);
 
@@ -187,7 +200,11 @@ class DaftarAnggota extends Component
         }
 
         $this->closeForm();
-        $this->resetPage();
+
+        if (! $isEdit) {
+            $this->resetPage();
+        }
+
         $this->notify('Data anggota berhasil disimpan.');
     }
 
@@ -230,11 +247,11 @@ class DaftarAnggota extends Component
 
         $anggota->nim = $this->nim;
         $anggota->nama_lengkap = $this->nama;
-        $anggota->tanggal_lahir = $this->tglLahir;
-        $anggota->jenis_kelamin = $this->jk;
-        $anggota->no_whatsapp = $this->wa;
-        $anggota->fakultas_id = (int) $this->fakultas_id;
-        $anggota->program_studi_id = (int) $this->program_studi_id;
+        $anggota->tanggal_lahir = $this->tglLahir !== '' ? $this->tglLahir : null;
+        $anggota->jenis_kelamin = $this->jk !== '' ? $this->jk : null;
+        $anggota->no_whatsapp = $this->wa !== '' ? $this->wa : null;
+        $anggota->fakultas_id = $this->fakultas_id !== '' ? (int) $this->fakultas_id : null;
+        $anggota->program_studi_id = $this->program_studi_id !== '' ? (int) $this->program_studi_id : null;
         $anggota->no_bpjs = $this->bpjs !== '' ? $this->bpjs : null;
         $anggota->status_anggota = $this->status_anggota;
 
