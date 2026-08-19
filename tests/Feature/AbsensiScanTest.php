@@ -60,10 +60,18 @@ class AbsensiScanTest extends TestCase
         ]);
     }
 
+    private function petugasUntuk(Jadwal $jadwal): User
+    {
+        $user = User::factory()->create(['role' => User::ROLE_PETUGAS]);
+        $jadwal->petugas()->attach($user->id);
+
+        return $user;
+    }
+
     public function test_manual_scan_records_hadir(): void
     {
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_PETUGAS]));
         $jadwal = $this->jadwalAktif();
+        $this->actingAs($this->petugasUntuk($jadwal));
         $anggota = $this->anggota('220011121', 'Anggota Scan');
 
         Livewire::test(AbsensiScan::class)
@@ -81,8 +89,8 @@ class AbsensiScanTest extends TestCase
 
     public function test_duplicate_scan_is_rejected(): void
     {
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_PETUGAS]));
-        $this->jadwalAktif();
+        $jadwal = $this->jadwalAktif();
+        $this->actingAs($this->petugasUntuk($jadwal));
         $anggota = $this->anggota('220011122', 'Anggota Duplikat');
 
         Livewire::test(AbsensiScan::class)
@@ -96,8 +104,8 @@ class AbsensiScanTest extends TestCase
 
     public function test_scan_by_qr_id_anggota_records_hadir(): void
     {
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_PETUGAS]));
         $jadwal = $this->jadwalAktif();
+        $this->actingAs($this->petugasUntuk($jadwal));
         $anggota = $this->anggota('220011123', 'Anggota QR');
 
         Livewire::test(AbsensiScan::class)
@@ -127,13 +135,13 @@ class AbsensiScanTest extends TestCase
 
     public function test_scan_rejected_when_no_active_jadwal(): void
     {
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_PETUGAS]));
         $now = Carbon::now();
-        Jadwal::create([
+        $jadwal = Jadwal::create([
             'hari' => $this->hariIni(),
             'jam_start' => $now->copy()->addHours(2)->format('H:i:s'),
             'jam_close' => $now->copy()->addHours(3)->format('H:i:s'),
         ]);
+        $this->actingAs($this->petugasUntuk($jadwal));
         $anggota = $this->anggota('220011125', 'Anggota NoJadwal');
 
         Livewire::test(AbsensiScan::class)
@@ -145,13 +153,13 @@ class AbsensiScanTest extends TestCase
 
     public function test_reports_today_schedule_when_window_not_open(): void
     {
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_PETUGAS]));
         $now = Carbon::now();
-        Jadwal::create([
+        $jadwal = Jadwal::create([
             'hari' => $this->hariIni(),
             'jam_start' => $now->copy()->addHours(2)->format('H:i:s'),
             'jam_close' => $now->copy()->addHours(3)->format('H:i:s'),
         ]);
+        $this->actingAs($this->petugasUntuk($jadwal));
 
         $component = Livewire::test(AbsensiScan::class);
         $component->assertSet('jadwalId', null);

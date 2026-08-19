@@ -6,6 +6,7 @@
         #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; border-radius: 0.75rem; }
     </style>
 
+    @if ($isAuthorized)
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8 items-start">
 
         <div class="xl:col-span-5 flex flex-col gap-5 md:gap-6 w-full">
@@ -270,6 +271,17 @@
             </div>
         </div>
     </template>
+    @endif
+    @else
+        <div class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-10 shadow-card transition-colors duration-300">
+            <div class="flex flex-col items-center justify-center py-10 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center text-yellow-600 dark:text-yellow-400 mb-4">
+                    <span class="material-symbols-outlined text-[26px]">event_busy</span>
+                </div>
+                <p class="font-heading font-bold text-sm text-gray-900 dark:text-white">Anda tidak memiliki jadwal tugas absen pada saat ini.</p>
+                <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-1">Scan akan aktif otomatis saat jadwal latihan Anda dimulai.</p>
+            </div>
+        </div>
     @endif
 
     @push('scripts')

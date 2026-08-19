@@ -37,6 +37,8 @@ class AbsensiScan extends Component
 
     public ?string $tanggalLibur = null;
 
+    public bool $isAuthorized = false;
+
     public Collection $records;
 
     public function mount(JadwalService $jadwalService): void
@@ -53,6 +55,7 @@ class AbsensiScan extends Component
     public function refreshJadwal(JadwalService $jadwalService): void
     {
         $now = now();
+        $user = auth()->user();
         $holiday = HariLibur::query()->whereDate('tanggal', $now->toDateString())->first();
 
         $this->isLibur = $holiday !== null;
@@ -67,6 +70,7 @@ class AbsensiScan extends Component
             $this->jadwalHariIniStatus = null;
             $this->sesiTanggal = null;
             $this->sesiMode = null;
+            $this->isAuthorized = $user?->canManageJadwal(null) ?? false;
             $this->records = new Collection;
 
             return;
@@ -87,6 +91,7 @@ class AbsensiScan extends Component
             $this->batasTutup = "{$jadwal->jam_close} WIB";
             $this->sesiTanggal = $now->toDateString();
             $this->sesiMode = 'live';
+            $this->isAuthorized = $user?->canManageJadwal($jadwal) ?? false;
 
             $this->loadRecords();
 
@@ -94,8 +99,9 @@ class AbsensiScan extends Component
         }
 
         $kemarin = $now->copy()->subDay();
+        $jadwalKemarin = $jadwalService->getJadwalUntukTanggal($kemarin);
         $sesiKemarinAda = Absensi::query()->whereDate('tanggal', $kemarin->toDateString())->exists()
-            || $jadwalService->getJadwalUntukTanggal($kemarin) !== null;
+            || $jadwalKemarin !== null;
 
         if ($sesiKemarinAda) {
             $windowEnd = $kemarin->copy()->addDay()->setHour(13)->setMinute(0);
@@ -103,6 +109,7 @@ class AbsensiScan extends Component
             if ($now->lessThan($windowEnd)) {
                 $this->sesiTanggal = $kemarin->toDateString();
                 $this->sesiMode = 'koreksi';
+                $this->isAuthorized = $user?->canManageJadwal($jadwalKemarin) ?? false;
 
                 $this->loadRecords();
 
@@ -111,6 +118,7 @@ class AbsensiScan extends Component
 
             if (! $jadwalService->getJadwalUntukTanggal($now)) {
                 $this->sesiMode = 'terkunci';
+                $this->isAuthorized = $user?->canManageJadwal($jadwalKemarin) ?? false;
                 $this->loadRecords();
 
                 return;
@@ -127,6 +135,7 @@ class AbsensiScan extends Component
             $this->jadwalHariIniStatus = null;
         }
 
+        $this->isAuthorized = $user?->canManageJadwal($jadwalHariIni) ?? false;
         $this->loadRecords();
     }
 
@@ -143,6 +152,10 @@ class AbsensiScan extends Component
 
     public function canEditAbsensi(): bool
     {
+        if (! $this->isAuthorized) {
+            return false;
+        }
+
         $user = auth()->user();
         $isAuthorizedRole = $user && in_array($user->role, [User::ROLE_ADMIN, User::ROLE_PETUGAS], true);
 
@@ -174,6 +187,11 @@ class AbsensiScan extends Component
 
     public function processManualInput(AbsensiService $service): void
     {
+        if (! $this->isAuthorized) {
+            $this->dispatch('toast', title: 'Akses Ditolak', message: 'Anda tidak memiliki jadwal tugas absen pada saat ini.', type: 'error');
+            return;
+        }
+
         $nim = trim($this->nim);
 
         if ($nim === '') {
@@ -206,6 +224,11 @@ class AbsensiScan extends Component
     #[On('scanResult')]
     public function processScanInput(string $idAnggota, AbsensiService $service): void
     {
+        if (! $this->isAuthorized) {
+            $this->dispatch('toast', title: 'Akses Ditolak', message: 'Anda tidak memiliki jadwal tugas absen pada saat ini.', type: 'error');
+            return;
+        }
+
         $idAnggota = trim($idAnggota);
 
         if ($idAnggota === '') {
@@ -235,7 +258,7 @@ class AbsensiScan extends Component
     #[On('changeStatus')]
     public function updateStatus(int|string $absensiId, string $status, AbsensiService $service): void
     {
-        if (! $this->canEditAbsensi()) {
+        if (! $this->isAuthorized || ! $this->canEditAbsensi()) {
             abort(403, 'Akses ditolak. Sesi absen sedang tidak aktif atau di luar jam perbaikan (12.00 - 13.00 WIB keesokan harinya).');
         }
 

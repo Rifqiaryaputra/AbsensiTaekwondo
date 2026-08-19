@@ -80,6 +80,19 @@ class User extends Authenticatable
         return $this->belongsToMany(Jadwal::class, 'jadwal_petugas')->withTimestamps();
     }
 
+    public function canManageJadwal(?Jadwal $jadwal): bool
+    {
+        if ($this->role === self::ROLE_ADMIN) {
+            return true;
+        }
+
+        if ($this->role === self::ROLE_PETUGAS && $jadwal !== null) {
+            return $jadwal->petugas()->whereKey($this->id)->exists();
+        }
+
+        return false;
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
