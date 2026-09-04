@@ -64,9 +64,9 @@
 
         <!-- Right: Today's Attendance Summary -->
         <div class="bg-white dark:bg-gray-800 rounded-3xl p-6 md:p-8 shadow-card flex flex-col transition-colors duration-300">
-            <div class="flex items-center justify-between mb-8">
-                <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white">Kehadiran Hari Ini</h3>
-                <span class="text-xs font-semibold text-gray-400 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">{{ now()->translatedFormat('M d, Y') }}</span>
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 mb-8">
+                <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white flex-1">Kehadiran Hari Ini</h3>
+                <span class="shrink-0 whitespace-nowrap text-xs font-semibold text-gray-400 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full self-start xl:self-auto">{{ now()->translatedFormat('M d, Y') }}</span>
             </div>
 
             <div class="flex-1 grid grid-cols-2 gap-3 md:gap-4">

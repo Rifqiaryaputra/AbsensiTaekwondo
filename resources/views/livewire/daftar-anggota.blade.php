@@ -289,8 +289,8 @@
     <!-- View Detail Modal -->
     @php $viewed = $this->viewingMember(); @endphp
     @if ($viewed)
-        <div id="viewMemberModal" class="modal-overlay fixed inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 @if($showView) active @endif">
-            <div class="modal-content bg-white dark:bg-dark-card rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col relative">
+        <div id="viewMemberModal" class="modal-overlay fixed inset-0 overflow-y-auto bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm z-[100] flex items-start justify-center p-4 @if($showView) active @endif">
+            <div class="modal-content bg-white dark:bg-dark-card rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col relative my-12">
                 <div class="bg-brand-blue h-32 relative">
                     <button wire:click="closeView" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/20 hover:bg-black/40 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
                         <span class="material-symbols-outlined text-[20px]">close</span>

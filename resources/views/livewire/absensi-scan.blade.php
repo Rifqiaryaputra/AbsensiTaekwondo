@@ -7,16 +7,16 @@
     </style>
 
     @if ($isAuthorized)
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
 
-        <div class="xl:col-span-5 flex flex-col gap-5 md:gap-6 w-full">
+        <div class="lg:col-span-5 flex flex-col gap-5 md:gap-6 w-full min-w-0">
             <!-- Active Schedule Alert -->
             @if ($jadwalInfo)
-                <!-- Wrapper utama: flex-col di mobile, flex-row di desktop (md:) -->
-                <div class="bg-[#F8FAFC] border border-[#E5E9F2] rounded-[1.5rem] p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-6">
-                    
+                <!-- Wrapper utama: flex-wrap agar ikon+teks & tombol melipat otomatis saat ruang sempit -->
+                <div class="bg-[#F8FAFC] border border-[#E5E9F2] rounded-[1.5rem] p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 mb-6">
+
                     <!-- Bagian Kiri: Ikon & Teks -->
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-start gap-3 flex-1 min-w-[240px]">
                         <!-- Lingkaran Ikon Lonceng -->
                         <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#3D5EE1] shadow-[0_2px_10px_rgba(0,0,0,0.04)] shrink-0">
                             <!-- Ikon Lonceng (Solid) -->
@@ -24,10 +24,10 @@
                                 <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path>
                             </svg>
                         </div>
-                        
+
                         <!-- Teks Informasi -->
-                        <div class="flex flex-col">
-                            <h3 class="text-[14px] md:text-[15px] font-bold text-[#2A44B6] leading-snug md:max-w-[280px]">
+                        <div class="flex-1">
+                            <h3 class="text-[14px] md:text-[15px] font-bold text-[#2A44B6] leading-snug">
                                 Jadwal Aktif: {{ $jadwalInfo }}
                             </h3>
                             <p class="text-[12px] md:text-[13px] font-medium text-[#7A93F5] mt-0.5">
@@ -37,8 +37,8 @@
                     </div>
 
                     <!-- Bagian Kanan: Tombol -->
-                    <button type="button" @click="showCloseModal = true" 
-                        class="w-full md:w-auto bg-[#EF4444] hover:bg-red-600 text-white font-bold py-3 md:py-2.5 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(239,68,68,0.3)] transition-all shrink-0">
+                    <button type="button" @click="showCloseModal = true"
+                        class="shrink-0 mt-2 sm:mt-0 w-full xl:w-auto bg-[#EF4444] hover:bg-red-600 text-white font-bold py-3 md:py-2.5 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(239,68,68,0.3)] transition-all">
                         <!-- Ikon Gembok (Lock) -->
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
@@ -138,7 +138,7 @@
             </div>
         </div>
 
-        <div class="xl:col-span-7 bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-card flex flex-col border border-gray-50/50 dark:border-gray-700/50 transition-colors duration-300">
+        <div class="lg:col-span-7 bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-card flex flex-col border border-gray-50/50 dark:border-gray-700/50 transition-colors duration-300 min-w-0">
             @if ($sesiMode === 'terkunci')
                 <div class="flex flex-col items-center justify-center flex-grow text-center py-12">
                     <div class="w-14 h-14 rounded-2xl bg-brand-light dark:bg-brand-blue/20 flex items-center justify-center text-brand-blue dark:text-blue-400 mb-4">
@@ -155,23 +155,23 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto flex-grow -mx-4 md:mx-0 px-4 md:px-0">
-                <table class="w-full text-left border-collapse min-w-[500px]">
+            <div class="overflow-hidden flex-grow -mx-4 md:mx-0 px-4 md:px-0">
+                <table class="w-full table-fixed text-left border-collapse">
                     <thead>
                         <tr>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-16">No</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-12">No</th>
                             <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">Nama / NIM</th>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-32">Status</th>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-24 text-center">Aksi</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-28">Status</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-16 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
                         @forelse ($records as $index => $record)
                             <tr wire:key="absensi-{{ $record->id }}" class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group">
                                 <td class="px-4 py-4 text-sm font-bold text-gray-400 dark:text-gray-500">{{ $index + 1 }}</td>
-                                <td class="px-4 py-4">
+                                <td class="px-4 py-4 break-words">
                                     <p class="font-bold text-gray-900 dark:text-white text-sm">{{ $record->anggota?->nama_lengkap ?? '-' }}</p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-0.5">{{ $record->anggota?->nim }}</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ $record->anggota?->nim }}</p>
                                 </td>
                                 <td class="px-4 py-4">
                                     <x-status-badge :status="$record->status" />
