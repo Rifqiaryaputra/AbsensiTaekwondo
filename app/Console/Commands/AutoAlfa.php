@@ -48,7 +48,7 @@ class AutoAlfa extends Command
                 })
                 ->pluck('id');
 
-            foreach ($anggotaIdTanpaKehadiran->chunk(500) as $chunk) {
+            foreach ($anggotaIdTanpaKehadiran->chunk(200) as $chunk) {
                 $records = $chunk->map(fn ($anggotaId) => [
                     'anggota_id' => $anggotaId,
                     'jadwal_id' => $jadwal->id,
@@ -59,7 +59,7 @@ class AutoAlfa extends Command
                     'updated_at' => $now,
                 ])->all();
 
-                Absensi::insert($records);
+                Absensi::insertOrIgnore($records);
                 $totalAlfa += count($records);
             }
         }

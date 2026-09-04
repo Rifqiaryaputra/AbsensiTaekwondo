@@ -293,9 +293,12 @@
             };
 
             window.updateStatus = function (status) {
-                // parseInt digunakan untuk mengubah tipe data string ("52") menjadi integer murni (52)
-                const absensiId = parseInt(document.getElementById('modalAbsensiId').value);
-                
+                const rawId = document.getElementById('modalAbsensiId').value;
+                // Pastikan ID absensi valid sebelum dispatch; hindari NaN -> null -> TypeError.
+                if (!rawId || !/^\d+$/.test(rawId)) {
+                    return;
+                }
+                const absensiId = parseInt(rawId, 10);
                 Livewire.dispatch('changeStatus', { absensiId: absensiId, status: status });
                 closeModal('editStatusModal');
             };

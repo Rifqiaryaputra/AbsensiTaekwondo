@@ -6,12 +6,17 @@
     $role = auth()->user()->role ?? 'anggota';
     $isAdminPetugas = in_array($role, ['admin', 'petugas']);
 
+    $hasPendingIzin = $isAdminPetugas
+        && \App\Models\IzinSakit::query()
+            ->where('status', \App\Models\IzinSakit::STATUS_MENUNGGU)
+            ->exists();
+
     $items = [];
     if ($isAdminPetugas) {
         $items[] = ['route' => 'dashboard', 'icon' => 'dashboard', 'label' => 'Dashboard'];
         $items[] = ['route' => 'absensi', 'icon' => 'qr_code_scanner', 'label' => 'Absen'];
         $items[] = ['route' => 'anggota.index', 'icon' => 'groups', 'label' => 'Data Anggota'];
-        $items[] = ['route' => 'perizinan.index', 'icon' => 'fact_check', 'label' => 'Perizinan'];
+        $items[] = ['route' => 'perizinan.index', 'icon' => 'fact_check', 'label' => 'Perizinan', 'badge' => $hasPendingIzin];
         if ($role === 'admin') {
             $items[] = ['route' => 'petugas.index', 'icon' => 'badge', 'label' => 'Petugas Absensi'];
             $items[] = ['route' => 'jadwal.index', 'icon' => 'calendar_month', 'label' => 'Jadwal'];
@@ -54,11 +59,17 @@
                 <a href="{{ route($item['route']) }}" class="flex items-center gap-3 px-4 py-3.5 bg-brand-blue text-white rounded-2xl font-semibold shadow-md shadow-brand-blue/20 transition-transform hover:scale-[1.02]">
                     <span class="material-symbols-outlined text-[20px]">{{ $item['icon'] }}</span>
                     <span class="text-sm">{{ $item['label'] }}</span>
+                    @if (($item['badge'] ?? false) === true)
+                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    @endif
                 </a>
             @else
                 <a href="{{ route($item['route']) }}" class="flex items-center gap-3 px-4 py-3.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue dark:hover:text-white hover:bg-brand-light dark:hover:bg-gray-700 transition-colors rounded-2xl font-medium">
                     <span class="material-symbols-outlined text-[20px]">{{ $item['icon'] }}</span>
                     <span class="text-sm">{{ $item['label'] }}</span>
+                    @if (($item['badge'] ?? false) === true)
+                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    @endif
                 </a>
             @endif
         @endforeach

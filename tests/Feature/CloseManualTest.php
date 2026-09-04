@@ -96,7 +96,7 @@ class CloseManualTest extends TestCase
 
         $this->post(route('jadwal.tutup', $jadwal->id))
             ->assertRedirect()
-            ->assertSessionHas('success', 'Sesi absensi ditutup. Anggota yang belum hadir direkap sebagai Alfa.');
+            ->assertSessionHas('success', 'Sesi absensi ditutup. Anggota yang belum hadir sedang direkap sebagai Alfa.');
 
         $this->assertDatabaseHas('absensi', [
             'anggota_id' => $a->id,

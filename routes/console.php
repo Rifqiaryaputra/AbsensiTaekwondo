@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 // Auto-rekap status Alfa untuk jadwal yang sesi absensinya sudah ditutup.
 // Daftarkan perintah auto-alfa agar berjalan setiap menit
 Schedule::command('absen:auto-alfa')->everyMinute();
+
+// Proses antrian job (mis. tutup sesi absen) tanpa supervisor.
+// Di shared hosting, schedule:run dipicu cron setiap menit.
+Schedule::command('queue:work --once --stop-when-empty --max-time=55')->everyMinute();

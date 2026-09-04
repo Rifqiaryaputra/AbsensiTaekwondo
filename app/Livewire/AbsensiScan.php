@@ -256,10 +256,16 @@ class AbsensiScan extends Component
     }
 
     #[On('changeStatus')]
-    public function updateStatus(int|string $absensiId, string $status, AbsensiService $service): void
+    public function updateStatus(int|string|null $absensiId, string $status, AbsensiService $service): void
     {
         if (! $this->isAuthorized || ! $this->canEditAbsensi()) {
             abort(403, 'Akses ditolak. Sesi absen sedang tidak aktif atau di luar jam perbaikan (12.00 - 13.00 WIB keesokan harinya).');
+        }
+
+        // Jaga-jaga: id null/NaN tidak boleh diteruskan ke query.
+        if ($absensiId === null || $absensiId === '' || $absensiId === 0) {
+            $this->dispatch('toast', title: 'Gagal', message: 'ID absensi tidak valid. Silakan pilih ulang catatan dari daftar.', type: 'error');
+            return;
         }
 
         $absensi = Absensi::find($absensiId);
