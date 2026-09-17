@@ -138,29 +138,49 @@ class DashboardStats extends Component
 
         $perDate = $rows->groupBy(fn ($row) => $row->tanggal->format('Y-m-d'));
 
+        $holidays = HariLibur::query()
+            ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->keyBy(fn ($libur) => $libur->tanggal->format('Y-m-d'));
+
         $shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
         $labels = [];
         $series = ['hadir' => [], 'izin' => [], 'sakit' => [], 'alfa' => []];
+        $liburByIndex = [];
 
-        foreach ($perDate as $dateStr => $dateRows) {
-            $date = \Carbon\Carbon::parse($dateStr);
-            $labels[] = $date->translatedFormat('D, j').' '.$shortMonths[$date->month - 1];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $dateStr = $cursor->toDateString();
+
+            $labels[] = $cursor->translatedFormat('D, j').' '.$shortMonths[$cursor->month - 1];
 
             $counts = ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alfa' => 0];
-            foreach ($dateRows as $row) {
-                if (isset($counts[$row->status])) {
-                    $counts[$row->status] = $row->total;
+
+            if ($holiday = $holidays->get($dateStr)) {
+                $counts['hadir'] = 0;
+                $counts['izin'] = 0;
+                $counts['sakit'] = 0;
+                $counts['alfa'] = 0;
+                $liburByIndex[count($labels) - 1] = 'Libur: '.$holiday->keterangan;
+            } else {
+                foreach ($perDate->get($dateStr, collect()) as $row) {
+                    if (isset($counts[$row->status])) {
+                        $counts[$row->status] = $row->total;
+                    }
                 }
             }
 
             foreach (['hadir', 'izin', 'sakit', 'alfa'] as $status) {
                 $series[$status][] = $counts[$status];
             }
+
+            $cursor->addDay();
         }
 
         return [
             'labels' => $labels,
+            'libur' => $liburByIndex,
             'datasets' => [
                 ['label' => 'Hadir', 'data' => $series['hadir'], 'backgroundColor' => '#22c55e'],
                 ['label' => 'Izin', 'data' => $series['izin'], 'backgroundColor' => '#3b82f6'],

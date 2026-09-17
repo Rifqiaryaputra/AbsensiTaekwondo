@@ -234,7 +234,19 @@
                                 mode: 'index',
                                 intersect: false,
                                 callbacks: {
-                                    title: (items) => 'Hari ' + (items[0] ? items[0].label : ''),
+                                    title: (items) => {
+                                        const idx = items.length && items[0].dataIndex;
+                                        const libur = raw.libur && raw.libur[idx];
+                                        return libur ? libur : ('Hari ' + (items[0] ? items[0].label : ''));
+                                    },
+                                    label: (item) => {
+                                        const libur = raw.libur && raw.libur[item.dataIndex];
+                                        const val = item.dataset.data[item.dataIndex];
+                                        if (libur) {
+                                            return val > 0 ? item.dataset.label + ': ' + val : null;
+                                        }
+                                        return item.dataset.label + ': ' + val;
+                                    },
                                 },
                             },
                         },

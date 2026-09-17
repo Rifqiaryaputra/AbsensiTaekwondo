@@ -2,7 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Models\Absensi;
 use App\Models\HariLibur;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -68,8 +70,24 @@ class KelolaHariLibur extends Component
         $libur->keterangan = $this->keterangan;
         $libur->save();
 
+        $this->rollbackAlfa($this->tanggal);
+
         $this->closeForm();
         $this->dispatch('toast', title: 'Berhasil', message: $this->editingId ? 'Data libur berhasil diperbarui.' : 'Data libur berhasil ditambahkan.', type: 'success');
+    }
+
+    private function rollbackAlfa(string $tanggalLibur): void
+    {
+        $tanggal = Carbon::parse($tanggalLibur);
+
+        if ($tanggal->greaterThan(now())) {
+            return;
+        }
+
+        Absensi::query()
+            ->whereDate('tanggal', $tanggal->toDateString())
+            ->where('status', Absensi::STATUS_ALFA)
+            ->delete();
     }
 
     public function openDelete(int $id, string $tanggal): void
