@@ -145,15 +145,27 @@ class DashboardStats extends Component
 
         $shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
+        $trainingDates = Absensi::query()
+            ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->pluck('tanggal')
+            ->map(fn ($t) => $t->format('Y-m-d'));
+
+        $holidayDates = HariLibur::query()
+            ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->pluck('tanggal')
+            ->map(fn ($t) => $t->format('Y-m-d'));
+
+        $dates = $trainingDates->merge($holidayDates)->unique()->values()->sort();
+        $dates = $dates->values()->all();
+
         $labels = [];
         $series = ['hadir' => [], 'izin' => [], 'sakit' => [], 'alfa' => []];
         $liburByIndex = [];
 
-        $cursor = $start->copy();
-        while ($cursor->lte($end)) {
-            $dateStr = $cursor->toDateString();
+        foreach ($dates as $dateStr) {
+            $date = \Carbon\Carbon::parse($dateStr);
 
-            $labels[] = $cursor->translatedFormat('D, j').' '.$shortMonths[$cursor->month - 1];
+            $labels[] = $date->translatedFormat('D, j').' '.$shortMonths[$date->month - 1];
 
             $counts = ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alfa' => 0];
 
@@ -174,8 +186,6 @@ class DashboardStats extends Component
             foreach (['hadir', 'izin', 'sakit', 'alfa'] as $status) {
                 $series[$status][] = $counts[$status];
             }
-
-            $cursor->addDay();
         }
 
         return [
