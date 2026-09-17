@@ -5,7 +5,7 @@ namespace App\Livewire;
 use App\Models\Absensi;
 use App\Models\HariLibur;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\CarbonPeriod;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -15,7 +15,9 @@ class KelolaHariLibur extends Component
 
     public ?int $editingId = null;
 
-    public string $tanggal = '';
+    public string $tanggal_mulai = '';
+
+    public string $tanggal_akhir = '';
 
     public string $keterangan = '';
 
@@ -37,13 +39,15 @@ class KelolaHariLibur extends Component
     {
         $this->showForm = true;
         $this->editingId = $id > 0 ? $id : null;
-        $this->tanggal = '';
+        $this->tanggal_mulai = '';
+        $this->tanggal_akhir = '';
         $this->keterangan = '';
 
         if ($this->editingId) {
             $libur = HariLibur::find($this->editingId);
             if ($libur) {
-                $this->tanggal = $libur->tanggal->format('Y-m-d');
+                $this->tanggal_mulai = $libur->tanggal->format('Y-m-d');
+                $this->tanggal_akhir = $libur->tanggal->format('Y-m-d');
                 $this->keterangan = $libur->keterangan;
             }
         }
@@ -53,27 +57,56 @@ class KelolaHariLibur extends Component
     {
         $this->showForm = false;
         $this->editingId = null;
-        $this->tanggal = '';
+        $this->tanggal_mulai = '';
+        $this->tanggal_akhir = '';
         $this->keterangan = '';
     }
 
     public function save(): void
     {
         $this->validate([
-            'tanggal' => ['required', 'date', Rule::unique('hari_libur', 'tanggal')->ignore($this->editingId)],
+            'tanggal_mulai' => ['required', 'date'],
+            'tanggal_akhir' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
             'keterangan' => ['required', 'string', 'max:255'],
         ]);
 
-        $libur = $this->editingId ? HariLibur::findOrFail($this->editingId) : new HariLibur;
-
-        $libur->tanggal = $this->tanggal;
-        $libur->keterangan = $this->keterangan;
-        $libur->save();
-
-        $this->rollbackAlfa($this->tanggal);
+        if ($this->editingId) {
+            $this->saveSingle();
+        } else {
+            $this->saveRange();
+        }
 
         $this->closeForm();
         $this->dispatch('toast', title: 'Berhasil', message: $this->editingId ? 'Data libur berhasil diperbarui.' : 'Data libur berhasil ditambahkan.', type: 'success');
+    }
+
+    private function saveSingle(): void
+    {
+        $libur = HariLibur::findOrFail($this->editingId);
+
+        $libur->tanggal = $this->tanggal_mulai;
+        $libur->keterangan = $this->keterangan;
+        $libur->save();
+
+        $this->rollbackAlfa($this->tanggal_mulai);
+    }
+
+    private function saveRange(): void
+    {
+        $period = CarbonPeriod::create($this->tanggal_mulai, $this->tanggal_akhir);
+
+        foreach ($period as $date) {
+            $tanggal = $date->format('Y-m-d');
+
+            if (! HariLibur::query()->whereDate('tanggal', $tanggal)->exists()) {
+                HariLibur::query()->create([
+                    'tanggal' => $tanggal,
+                    'keterangan' => $this->keterangan,
+                ]);
+            }
+
+            $this->rollbackAlfa($tanggal);
+        }
     }
 
     private function rollbackAlfa(string $tanggalLibur): void

@@ -65,13 +65,24 @@
             </div>
 
             <div class="p-6 space-y-5">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tanggal Libur <span class="text-red-500">*</span></label>
-                    <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-1 focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center">
-                        <input type="date" wire:model="tanggal" value="{{ $tanggal }}" class="w-full px-4 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none cursor-pointer relative z-10 border-0 ring-0 focus:ring-0">
-                        <span class="material-symbols-outlined absolute right-4 text-gray-400 pointer-events-none z-0 text-[20px]">calendar_today</span>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tanggal Mulai <span class="text-red-500">*</span></label>
+                        <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-1 focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center">
+                            <input type="date" wire:model="tanggal_mulai" value="{{ $tanggal_mulai }}" class="w-full px-3 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none cursor-pointer relative z-10 border-0 ring-0 focus:ring-0">
+                            <span class="material-symbols-outlined absolute right-3 text-gray-400 pointer-events-none z-0 text-[20px]">calendar_today</span>
+                        </div>
+                        @error('tanggal_mulai') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
-                    @error('tanggal') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tanggal Akhir <span class="text-red-500">*</span></label>
+                        <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-1 focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center">
+                            <input type="date" wire:model="tanggal_akhir" value="{{ $tanggal_akhir }}" class="w-full px-3 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none cursor-pointer relative z-10 border-0 ring-0 focus:ring-0">
+                            <span class="material-symbols-outlined absolute right-3 text-gray-400 pointer-events-none z-0 text-[20px]">calendar_today</span>
+                        </div>
+                        @error('tanggal_akhir') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
 
                 <div>
