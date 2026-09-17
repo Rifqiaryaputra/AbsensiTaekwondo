@@ -5,7 +5,7 @@
             <h1 class="font-heading font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight">Riwayat Izin & Sakit</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Ajukan izin/sakit dan pantau status pengajuan Anda.</p>
         </div>
-        <button type="button" wire:click="toggleForm(true)"
+        <button type="button" wire:click="validasiDanBukaForm"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-blue text-white rounded-xl md:rounded-full font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-colors focus:outline-none">
             <span class="material-symbols-outlined text-[20px]">add_circle</span>
             Ajukan Izin/Sakit

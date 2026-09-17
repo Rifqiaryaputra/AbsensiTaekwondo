@@ -180,6 +180,24 @@ class PengajuanIzin extends Component
         }
     }
 
+    public function validasiDanBukaForm(JadwalService $service): void
+    {
+        $now = Carbon::now();
+        $jadwal = $service->getJadwalUntukTanggal($now);
+
+        if ($jadwal) {
+            $batas = $service->batasPengajuan($jadwal, $now);
+
+            if (! $now->lt($batas)) {
+                $this->dispatch('toast', title: 'Akses Ditolak', message: 'Maaf, batas waktu pengajuan izin telah habis. Pengajuan hanya dapat dilakukan maksimal 2 jam sebelum latihan dimulai.', type: 'error');
+
+                return;
+            }
+        }
+
+        $this->toggleForm(true);
+    }
+
     public function pengajuanQuery()
     {
         return IzinSakit::query()
