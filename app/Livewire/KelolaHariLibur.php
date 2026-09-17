@@ -66,13 +66,14 @@ class KelolaHariLibur extends Component
     {
         $this->validate([
             'tanggal_mulai' => ['required', 'date'],
-            'tanggal_akhir' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+            'tanggal_akhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
             'keterangan' => ['required', 'string', 'max:255'],
         ]);
 
         if ($this->editingId) {
             $this->saveSingle();
         } else {
+            $this->tanggal_akhir = $this->tanggal_akhir ?: $this->tanggal_mulai;
             $this->saveRange();
         }
 
