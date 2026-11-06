@@ -155,28 +155,28 @@
                 </div>
             </div>
 
-            <div class="overflow-hidden flex-grow -mx-4 md:mx-0 px-4 md:px-0">
-                <table class="w-full table-fixed text-left border-collapse">
+            <div class="w-full overflow-x-auto">
+                <table class="m-0 w-full min-w-max border-collapse text-left">
                     <thead>
                         <tr>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-12">No</th>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">Nama / NIM</th>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-28">Status</th>
-                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-16 text-center">Aksi</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-12 whitespace-nowrap">No</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 whitespace-nowrap">Nama / NIM</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-28 whitespace-nowrap">Status</th>
+                            <th class="px-4 py-4 font-bold text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 w-16 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
                         @forelse ($records as $index => $record)
                             <tr wire:key="absensi-{{ $record->id }}" class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group">
-                                <td class="px-4 py-4 text-sm font-bold text-gray-400 dark:text-gray-500">{{ $index + 1 }}</td>
-                                <td class="px-4 py-4 break-words">
+                                <td class="px-4 py-4 text-sm font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap">{{ $index + 1 }}</td>
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <p class="font-bold text-gray-900 dark:text-white text-sm">{{ $record->anggota?->nama_lengkap ?? '-' }}</p>
                                     <p class="text-xs text-gray-400 dark:text-gray-400 font-medium mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ $record->anggota?->nim }}</p>
                                 </td>
-                                <td class="px-4 py-4">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <x-status-badge :status="$record->status" />
                                 </td>
-                                <td class="px-4 py-4 text-center">
+                                <td class="px-4 py-4 text-center whitespace-nowrap">
                                     @if ($this->canEditAbsensi())
                                         <button type="button" onclick="openEditStatusModal({{ $record->id }}, '{{ addslashes($record->anggota?->nama_lengkap ?? '') }}')"
                                             class="w-8 h-8 mx-auto rounded-xl bg-transparent text-gray-400 dark:text-gray-400 flex items-center justify-center hover:bg-brand-light dark:hover:bg-gray-600 hover:text-brand-blue dark:hover:text-blue-400 transition-colors opacity-50 group-hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-blue/50"
@@ -188,14 +188,13 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-4 py-12 text-center text-sm font-medium text-gray-400 dark:text-gray-500">
+                                <td colspan="4" class="px-4 py-12 text-center text-sm font-medium text-gray-400 dark:text-gray-500 whitespace-nowrap">
                                     Belum ada data absensi untuk sesi ini.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
-                </table>
-            </div>
+                </table></div>
             @endif
         </div>
     </div>
