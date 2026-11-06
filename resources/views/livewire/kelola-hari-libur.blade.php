@@ -1,5 +1,5 @@
 <div>
-    @if (count($libur) === 0)
+    @if (count($groupedLibur) === 0)
         <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 shadow-card py-16 px-6 text-center flex-col items-center justify-center transition-colors duration-300">
             <div class="w-20 h-20 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-5 mx-auto">
                 <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500">event_busy</span>
@@ -13,8 +13,8 @@
         </div>
     @else
         <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-50 dark:border-gray-700 shadow-card flex flex-col overflow-hidden transition-colors duration-300">
-            <div class="overflow-x-auto w-full">
-                <table class="w-full text-left border-collapse">
+            <div class="w-full overflow-x-auto">
+                <table class="w-full min-w-[640px] text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 transition-colors">
                             <th class="py-3 px-4 md:py-4 md:px-6 font-bold text-[10px] md:text-[11px] text-gray-400 dark:text-gray-400 uppercase tracking-wider">Tanggal</th>
@@ -23,25 +23,40 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
-                        @foreach ($libur as $l)
-                            <tr wire:key="libur-{{ $l->id }}" class="hover:bg-brand-light/40 dark:hover:bg-gray-700/40 transition-colors group">
+                        @foreach ($groupedLibur as $group)
+                            <tr wire:key="libur-group-{{ $group['ids'][0] }}" class="hover:bg-brand-light/40 dark:hover:bg-gray-700/40 transition-colors group">
                                 <td class="py-3 px-4 md:py-4 md:px-6">
-                                    <div class="flex items-start md:items-center gap-2 md:gap-3">
-                                        <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0 mt-0.5 md:mt-0">
+                                    <div class="flex items-start gap-2 md:gap-3">
+                                        <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0 mt-0.5">
                                             <span class="material-symbols-outlined text-[16px] md:text-[20px]">calendar_month</span>
                                         </div>
-                                        <span class="font-bold text-gray-900 dark:text-white text-xs md:text-sm pt-1.5 md:pt-0">{{ $l->tanggal?->translatedFormat('l, d F Y') }}</span>
+                                        <div class="flex flex-col gap-1.5 pt-0.5">
+                                            <span class="font-bold text-gray-900 dark:text-white text-xs md:text-sm">
+                                                @if ($group['is_range'])
+                                                    {{ $group['tanggal_mulai_label'] }} - {{ $group['tanggal_akhir_label'] }}
+                                                @else
+                                                    {{ $group['tanggal_single_label'] }}
+                                                @endif
+                                            </span>
+                                            @if (count($group['hari_latihan_valid']) > 0)
+                                                <div class="flex flex-wrap gap-1 mt-2">
+                                                    @foreach ($group['hari_latihan_valid'] as $badgeTanggal)
+                                                        <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">{{ $badgeTanggal }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="py-3 px-4 md:py-4 md:px-6">
-                                    <span class="font-medium text-gray-600 dark:text-gray-300 text-xs md:text-sm">{{ $l->keterangan }}</span>
+                                    <span class="font-medium text-gray-600 dark:text-gray-300 text-xs md:text-sm">{{ $group['keterangan'] }}</span>
                                 </td>
                                 <td class="py-3 px-4 md:py-4 md:px-6 text-right">
                                     <div class="flex items-center justify-end gap-1 md:gap-2">
-                                        <button type="button" wire:click="openForm({{ $l->id }})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-500 dark:hover:text-amber-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Edit Data">
+                                        <button type="button" wire:click="openForm(@js($group['ids']))" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-500 dark:hover:text-amber-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Edit Data">
                                             <span class="material-symbols-outlined text-[18px] md:text-[20px]">edit</span>
                                         </button>
-                                        <button type="button" wire:click="openDelete({{ $l->id }}, '{{ $l->tanggal?->translatedFormat('l, d F Y') }}')" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Hapus Data">
+                                        <button type="button" wire:click="openDelete(@js($group['ids']))" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-transparent text-gray-400 dark:text-gray-500 rounded-lg md:rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-100 md:opacity-70 group-hover:opacity-100 focus:outline-none" title="Hapus Data">
                                             <span class="material-symbols-outlined text-[18px] md:text-[20px]">delete</span>
                                         </button>
                                     </div>
@@ -107,7 +122,7 @@
                 <span class="material-symbols-outlined text-[32px]">warning</span>
             </div>
             <h3 class="font-heading font-bold text-lg text-gray-900 dark:text-white mb-2">Hapus Libur?</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Apakah Anda yakin ingin menghapus data libur pada tanggal <strong class="text-gray-900 dark:text-white">{{ $deleteTanggal }}</strong>?</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Apakah Anda yakin ingin menghapus data libur pada <strong class="text-gray-900 dark:text-white">{{ $deleteTanggal }}</strong>?</p>
             <div class="flex justify-center gap-3">
                 <button type="button" wire:click="closeDelete" class="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-full">Batal</button>
                 <button type="button" wire:click="confirmDelete" class="px-5 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-md shadow-red-500/30 w-full">Ya, Hapus</button>
