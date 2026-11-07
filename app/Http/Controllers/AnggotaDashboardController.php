@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absensi;
+use App\Models\Anggota;
 use App\Models\HariLibur;
 use App\Models\Jadwal;
 use App\Services\AnggotaService;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 
 class AnggotaDashboardController extends Controller
 {
@@ -35,13 +36,14 @@ class AnggotaDashboardController extends Controller
                 'foto' => null,
                 'qr_code' => null,
                 'inisial' => '?',
-                'status' => \App\Models\Anggota::STATUS_AKTIF,
+                'status' => Anggota::STATUS_AKTIF,
             ];
 
         [$statistik, $riwayat, $bulanList] = $this->rekapPresensi($anggotaModel?->id);
 
         $liburTerdekat = HariLibur::query()
             ->whereDate('tanggal', '>=', Carbon::today()->toDateString())
+            ->whereDate('tanggal', '<=', Carbon::today()->endOfWeek(Carbon::SUNDAY)->toDateString())
             ->orderBy('tanggal')
             ->first();
 
@@ -77,37 +79,64 @@ class AnggotaDashboardController extends Controller
     }
 
     /**
-     * Sesi latihan berikutnya berdasarkan jadwal mingguan (hari + jam terdekat dari hari ini).
+     * Sesi latihan berikutnya berdasarkan jadwal mingguan, dengan tanggal libur dilewati.
      */
     private function jadwalTerdekat(): ?array
     {
-        $hariKe = [
-            'Minggu' => 0,
-            'Senin' => 1,
-            'Selasa' => 2,
-            'Rabu' => 3,
-            'Kamis' => 4,
-            'Jumat' => 5,
-            'Sabtu' => 6,
-        ];
+        $jadwalPerHari = Jadwal::query()
+            ->orderBy('jam_start')
+            ->get()
+            ->groupBy('hari');
 
-        $today = Carbon::today();
-        $terdekat = null;
-        $result = null;
-
-        foreach (Jadwal::query()->orderBy('jam_start')->get() as $jadwal) {
-            $next = $today->copy()->next((int) $hariKe[$jadwal->hari]);
-
-            if ($terdekat === null || $next->lt($terdekat)) {
-                $terdekat = $next;
-                $result = [
-                    'tanggal' => $next->translatedFormat('l, d F Y'),
-                    'jam' => $jadwal->jam_start.' WIB',
-                ];
-            }
+        if ($jadwalPerHari->isEmpty()) {
+            return null;
         }
 
-        return $result;
+        $now = Carbon::now();
+        $today = $now->copy()->startOfDay();
+        $batasPencarian = $today->copy()->addDays(366);
+
+        $tanggalLibur = HariLibur::query()
+            ->whereBetween('tanggal', [$today->toDateString(), $batasPencarian->toDateString()])
+            ->pluck('tanggal')
+            ->map(fn ($tanggal) => Carbon::parse($tanggal)->toDateString())
+            ->flip()
+            ->all();
+
+        for ($offset = 0; $offset <= 366; $offset++) {
+            $tanggal = $today->copy()->addDays($offset);
+            $namaHari = $tanggal->copy()->locale('id')->translatedFormat('l');
+            $jadwalHari = $jadwalPerHari->get($namaHari, collect());
+
+            if ($jadwalHari->isEmpty()) {
+                continue;
+            }
+
+            if ($offset === 0) {
+                $jadwalHari = $jadwalHari
+                    ->filter(fn ($jadwal) => $tanggal->copy()
+                        ->setTimeFromTimeString($jadwal->jam_start)
+                        ->gte($now))
+                    ->values();
+
+                if ($jadwalHari->isEmpty()) {
+                    continue;
+                }
+            }
+
+            if (isset($tanggalLibur[$tanggal->toDateString()])) {
+                continue;
+            }
+
+            $jadwal = $jadwalHari->first();
+
+            return [
+                'tanggal' => $tanggal->copy()->locale('id')->translatedFormat('l, d F Y'),
+                'jam' => $jadwal->jam_start.' WIB',
+            ];
+        }
+
+        return null;
     }
 
     /**

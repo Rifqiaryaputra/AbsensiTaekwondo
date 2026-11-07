@@ -5,7 +5,7 @@
             <span class="material-symbols-outlined text-[20px]">download</span>
             Export Excel
         </button>
-        <button type="button" onclick="Livewire.dispatch('importAnggota')" class="flex items-center justify-center gap-2 px-5 py-3 md:py-2.5 bg-brand-light dark:bg-brand-blue/20 text-brand-blue dark:text-brand-light rounded-xl md:rounded-full font-semibold text-sm hover:bg-blue-100 dark:hover:bg-brand-blue/30 transition-colors w-full sm:w-auto">
+        <button type="button" onclick="Livewire.dispatch('importAnggota')" class="flex items-center justify-center gap-2 px-5 py-3 md:py-2.5 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full font-medium text-sm shadow-sm hover:bg-indigo-50 dark:hover:bg-gray-700 hover:border-indigo-300 transition-colors w-full sm:w-auto">
             <span class="material-symbols-outlined text-[20px]">file_upload</span>
             Import Data
         </button>

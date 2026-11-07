@@ -4,12 +4,6 @@
 
         <!-- Area Kartu ID -->
         <div id="area-kartu-id" class="bg-white dark:bg-gray-800 rounded-3xl shadow-card border border-gray-50 dark:border-gray-700 overflow-hidden relative group transition-colors duration-300">
-            <div class="absolute top-0 right-0 p-4 z-20 hidden md:block">
-                <a href="{{ route('anggota.download.qr') }}" class="bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-brand-blue dark:hover:text-brand-light shadow-sm hover:shadow-md px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all">
-                    <span class="material-symbols-outlined text-[18px]">download</span> Unduh QR
-                </a>
-            </div>
-
             <div class="p-6 md:p-8 relative flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
                 <!-- Foto & Status -->
                 <div class="shrink-0 flex flex-col items-center">
@@ -50,22 +44,23 @@
                     </div>
                 </div>
 
-                <!-- QR Code -->
-                <div class="shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center shadow-inner mt-4 md:mt-0 w-full md:w-auto transition-colors">
-                    @if ($anggota['qr_code'])
-                        <img src="{{ asset($anggota['qr_code']) }}" alt="QR {{ $anggota['id_anggota'] }}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl">
-                    @else
-                        <span class="material-symbols-outlined text-6xl sm:text-7xl text-gray-800 dark:text-white">qr_code_2</span>
-                    @endif
-                    <span class="text-[10px] font-bold text-gray-400 mt-2 tracking-widest uppercase">Scan Absensi</span>
+                <!-- QR Code & Download -->
+                <div class="shrink-0 flex flex-col items-center gap-2 mt-4 md:mt-0 w-full md:w-40">
+                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center shadow-inner w-full transition-colors">
+                        @if ($anggota['qr_code'])
+                            <img src="{{ asset($anggota['qr_code']) }}" alt="QR {{ $anggota['id_anggota'] }}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl">
+                        @else
+                            <span class="material-symbols-outlined text-6xl sm:text-7xl text-gray-800 dark:text-white">qr_code_2</span>
+                        @endif
+                        <span class="text-[10px] font-bold text-gray-400 mt-2 tracking-widest uppercase">Scan Absensi</span>
+                    </div>
+
+                    <a href="{{ route('anggota.download.qr') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 mt-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-colors dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white">
+                        <span class="material-symbols-outlined text-[18px]">download</span> Unduh QR
+                    </a>
                 </div>
             </div>
         </div>
-
-        <!-- Mobile Download Button -->
-        <a href="{{ route('anggota.download.qr') }}" class="md:hidden w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 shadow-sm hover:shadow-md px-4 py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all">
-            <span class="material-symbols-outlined text-[18px]">download</span> Unduh QR
-        </a>
 
         <!-- Dashboard Grid Area -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
@@ -110,7 +105,10 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-red-700 dark:text-red-400 text-sm transition-colors">Pemberitahuan Libur</h3>
-                            <p class="text-xs text-red-600/80 dark:text-red-300 font-medium mt-1 transition-colors">Latihan ditiadakan pada <strong class="text-red-700 dark:text-red-400">{{ $liburTerdekat['tanggal'] }}</strong> ({{ $liburTerdekat['keterangan'] }}).</p>
+                            <div class="text-sm text-red-700 dark:text-red-400 mt-1 transition-colors">
+                                Latihan pada <span class="font-bold">{{ $liburTerdekat['tanggal'] }}</span> ditiadakan.
+                                <p class="mt-0.5">Keterangan: <span class="font-medium">{{ $liburTerdekat['keterangan'] }}</span></p>
+                            </div>
                         </div>
                     </div>
                 @endif
