@@ -1,6 +1,6 @@
 <div>
     <!-- Filter Bar -->
-    <div class="bg-white dark:bg-dark-card rounded-3xl border border-gray-50 dark:border-dark-border p-5 md:p-6 shadow-card dark:shadow-dark-card flex flex-col md:flex-row gap-4 items-center z-10 relative transition-colors duration-300">
+    <div class="bg-white dark:bg-dark-card rounded-3xl border border-gray-50 dark:border-dark-border p-5 md:p-6 shadow-card dark:shadow-dark-card flex flex-col md:flex-row gap-4 items-center z-10 relative transition-colors duration-300 mb-6">
         <div class="relative w-full flex-1">
             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
             <input wire:model.live.debounce.300ms="search"
