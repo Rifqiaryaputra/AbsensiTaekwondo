@@ -77,7 +77,11 @@ class RekapKehadiran extends Component
      */
     public function anggotaQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        $search = strtolower(trim($this->search));
+        $searchTerms = collect(explode(',', $this->search))
+            ->map(fn ($term) => strtolower(trim($term)))
+            ->filter()
+            ->values()
+            ->all();
 
         [$start, $end] = array_values($this->getEffectiveDates());
 
@@ -89,11 +93,13 @@ class RekapKehadiran extends Component
                 'absensi as total_izin' => fn ($q) => $q->where('status', Absensi::STATUS_IZIN)->whereDate('tanggal', '>=', $start)->whereDate('tanggal', '<=', $end),
                 'absensi as total_alfa' => fn ($q) => $q->where('status', Absensi::STATUS_ALFA)->whereDate('tanggal', '>=', $start)->whereDate('tanggal', '<=', $end),
             ])
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->whereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(nim) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(id_anggota) LIKE ?', ["%{$search}%"]);
+            ->when($searchTerms !== [], function ($query) use ($searchTerms) {
+                $query->where(function ($query) use ($searchTerms) {
+                    foreach ($searchTerms as $term) {
+                        $query->orWhereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(nim) LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(id_anggota) LIKE ?', ["%{$term}%"]);
+                    }
                 });
             });
     }

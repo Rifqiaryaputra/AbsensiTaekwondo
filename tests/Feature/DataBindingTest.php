@@ -558,6 +558,11 @@ class DataBindingTest extends TestCase
             ->set('search', 'Rekap Dua')
             ->assertSee('Rekap Dua')
             ->assertDontSee('Rekap Satu');
+
+        Livewire::test(RekapKehadiran::class)
+            ->set('search', 'Rekap Satu, Rekap Dua')
+            ->assertSee('Rekap Satu')
+            ->assertSee('Rekap Dua');
     }
 
     public function test_rekap_excel_export_format_and_filter(): void
@@ -602,6 +607,15 @@ class DataBindingTest extends TestCase
         $this->assertCount(2, $rows2);
         $this->assertSame([1, 'Export Dua', 220011604, 0, 0, 1, 0], $rows2[1]);
         @unlink(storage_path('app/private/'.$path2));
+
+        // Filter multi-search dengan koma -> dua anggota diexport
+        $path3 = 'rekap_test3.xlsx';
+        Excel::store(new RekapKehadiranExport('Export Satu, Export Dua', $start, $end), $path3, 'local', \Maatwebsite\Excel\Excel::XLSX);
+        $rows3 = IOFactory::load(storage_path('app/private/'.$path3))->getActiveSheet()->toArray(null, true, false);
+        $this->assertCount(3, $rows3);
+        $this->assertSame([1, 'Export Satu', 220011603, 1, 0, 0, 1], $rows3[1]);
+        $this->assertSame([2, 'Export Dua', 220011604, 0, 0, 1, 0], $rows3[2]);
+        @unlink(storage_path('app/private/'.$path3));
     }
 
     public function test_rekap_export_excel_and_pdf_download(): void

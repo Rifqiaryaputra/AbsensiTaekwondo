@@ -21,7 +21,11 @@ class RekapKehadiranExport implements FromQuery, WithHeadings, WithMapping
 
     public function query(): \Illuminate\Database\Eloquent\Builder
     {
-        $search = strtolower(trim($this->search));
+        $searchTerms = collect(explode(',', $this->search))
+            ->map(fn ($term) => strtolower(trim($term)))
+            ->filter()
+            ->values()
+            ->all();
 
         return Anggota::query()
             ->withCount([
@@ -30,11 +34,13 @@ class RekapKehadiranExport implements FromQuery, WithHeadings, WithMapping
                 'absensi as total_izin' => fn ($q) => $q->where('status', Absensi::STATUS_IZIN)->when($this->start, fn ($q) => $q->whereDate('tanggal', '>=', $this->start))->when($this->end, fn ($q) => $q->whereDate('tanggal', '<=', $this->end)),
                 'absensi as total_alfa' => fn ($q) => $q->where('status', Absensi::STATUS_ALFA)->when($this->start, fn ($q) => $q->whereDate('tanggal', '>=', $this->start))->when($this->end, fn ($q) => $q->whereDate('tanggal', '<=', $this->end)),
             ])
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->whereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(nim) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(id_anggota) LIKE ?', ["%{$search}%"]);
+            ->when($searchTerms !== [], function ($query) use ($searchTerms) {
+                $query->where(function ($query) use ($searchTerms) {
+                    foreach ($searchTerms as $term) {
+                        $query->orWhereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(nim) LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(id_anggota) LIKE ?', ["%{$term}%"]);
+                    }
                 });
             })
             ->orderBy('id_anggota');

@@ -30,7 +30,7 @@
                 <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Cari Anggota</label>
                 <div class="relative w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus-within:border-brand-blue dark:focus-within:border-brand-blue/70 focus-within:ring-4 focus-within:ring-brand-light dark:focus-within:ring-brand-blue/20 transition-all overflow-hidden flex items-center h-12">
                     <span class="material-symbols-outlined absolute left-4 text-gray-400 pointer-events-none z-0 text-[20px]">search</span>
-                    <input type="text" wire:model.live.debounce.300ms="search" class="w-full px-4 pl-12 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none relative z-10 border-0 ring-0 focus:ring-0" placeholder="Cari nama, NIM, atau ID anggota...">
+                    <input type="text" wire:model.live.debounce.300ms="search" class="w-full px-4 pl-12 py-2.5 bg-transparent font-medium text-sm text-gray-800 dark:text-white focus:outline-none relative z-10 border-0 ring-0 focus:ring-0" placeholder="Cari nama, NIM, atau ID (pisahkan dengan koma)">
                 </div>
             </div>
 

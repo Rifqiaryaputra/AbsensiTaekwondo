@@ -318,24 +318,25 @@
                         @endif
                     </div>
 
-                    <div class="bg-gray-50/80 dark:bg-gray-800/80 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-sm">
-                            <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider font-bold mb-1.5">Fakultas / Prodi</p>
-                                <p class="font-semibold text-gray-900 dark:text-white">{{ $viewed->fakultas?->nama_fakultas ?? '-' }} · {{ $viewed->programStudi?->nama_prodi ?? '-' }}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 p-5 bg-gray-50 dark:bg-gray-800/80 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div class="sm:col-span-2">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Fakultas / Prodi</p>
+                            <div class="text-sm leading-relaxed">
+                                <span class="block font-semibold text-gray-800 dark:text-white">{{ $viewed->fakultas?->nama_fakultas ?? '-' }}</span>
+                                <span class="block font-medium text-gray-500 dark:text-gray-400 mt-0.5">{{ $viewed->programStudi?->nama_prodi ?? '-' }}</span>
                             </div>
-                            <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider font-bold mb-1.5">No. WhatsApp</p>
-                                <p class="font-semibold text-gray-900 dark:text-white">{{ $viewed->no_whatsapp }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider font-bold mb-1.5">Tgl Lahir / Gender</p>
-                                <p class="font-semibold text-gray-900 dark:text-white">{{ $viewed->tanggal_lahir?->format('d/m/Y') }} · {{ $viewed->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider font-bold mb-1.5">No. BPJS</p>
-                                <p class="font-semibold text-gray-900 dark:text-white">{{ $viewed->no_bpjs ?: '-' }}</p>
-                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">No. WhatsApp</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-white">{{ $viewed->no_whatsapp }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tgl Lahir / Gender</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-white">{{ $viewed->tanggal_lahir?->format('d/m/Y') }} · {{ $viewed->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">No. BPJS</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-white">{{ $viewed->no_bpjs ?: '-' }}</p>
                         </div>
                     </div>
 
