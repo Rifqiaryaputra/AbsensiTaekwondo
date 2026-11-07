@@ -136,31 +136,41 @@
 
         <!-- Tabel Riwayat Singkat -->
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-card border border-gray-50 dark:border-gray-700 p-6 md:p-8 w-full mt-4 flex flex-col transition-colors duration-300">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 md:gap-4">
                 <div>
                     <h2 class="font-heading text-lg md:text-xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors">Riwayat Presensi</h2>
                     {{-- <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1 transition-colors">10 data terakhir</p> --}}
                 </div>
 
-                <div class="relative shrink-0 w-full sm:w-auto min-w-[140px]">
-                    <select x-model="bulan" class="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs sm:text-sm rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 focus:border-brand-blue block w-full pl-4 pr-10 py-2.5 md:py-2 font-medium cursor-pointer transition-all">
-                        @forelse ($bulanList as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @empty
-                            <option value="">Tidak ada data</option>
-                        @endforelse
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
-                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
+                <!-- Action Buttons Container -->
+                <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+                    <!-- Tombol Export -->
+                    <button type="button" onclick="exportTableToExcel('tabel-presensi', 'Riwayat_Presensi')" class="flex items-center justify-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-colors w-full sm:w-auto">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export Absen
+                    </button>
+
+                    <!-- Dropdown Filter -->
+                    <div class="relative shrink-0 w-full sm:w-auto min-w-[140px]">
+                        <select x-model="bulan" class="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs sm:text-sm rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 focus:border-brand-blue block w-full pl-4 pr-10 py-2.5 md:py-2 font-medium cursor-pointer transition-all">
+                            @forelse ($bulanList as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @empty
+                                <option value="">Tidak ada data</option>
+                            @endforelse
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden relative shadow-sm transition-colors">
                 <div class="overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse min-w-[400px]">
+                    <table id="tabel-presensi" class="w-full text-left border-collapse min-w-[400px]">
                         <thead>
                             <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 transition-colors">
                                 <template x-for="item in filteredRiwayat()" :key="item.date">
@@ -176,7 +186,7 @@
                         <tbody>
                             <tr class="bg-white dark:bg-gray-800 divide-x divide-gray-50 dark:divide-gray-700 transition-colors">
                                 <template x-for="item in filteredRiwayat()" :key="item.date">
-                                    <td class="py-4 px-3 md:px-4 text-center transition-colors border-r border-gray-50 dark:border-gray-700 last:border-0">
+                                    <td data-presensi class="py-4 px-3 md:px-4 text-center transition-colors border-r border-gray-50 dark:border-gray-700 last:border-0">
                                         <div class="mx-auto w-10 h-10 rounded-full flex items-center justify-center" :class="statusClass(item.status)">
                                             <span class="font-heading font-extrabold text-lg" :class="statusText(item.status)" x-text="statusLetter(item.status)"></span>
                                         </div>
@@ -194,6 +204,26 @@
     </div>
 
     @push('scripts')
+        <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+        <script>
+            function exportTableToExcel(tableID, filename = '') {
+                var table = document.getElementById(tableID);
+                var dataCells = table ? table.querySelectorAll('tbody td[data-presensi]') : [];
+
+                if (!table || dataCells.length === 0) {
+                    alert('Tidak ada data untuk diekspor.');
+                    return;
+                }
+
+                var wb = XLSX.utils.table_to_book(table, { sheet: 'Riwayat' });
+
+                var d = new Date();
+                var dateString = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+                filename = filename ? filename + '.xlsx' : dateString + '-presensi.xlsx';
+
+                XLSX.writeFile(wb, filename);
+            }
+        </script>
         <script>
             function anggotaApp() {
                 return {
