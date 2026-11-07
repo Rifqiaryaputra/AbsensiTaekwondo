@@ -1,3 +1,11 @@
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@endpush
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+@endpush
+
 <div class="space-y-6 md:space-y-8">
     <!-- Header + Aksi -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -64,7 +72,7 @@
                     <h3 class="font-heading font-extrabold text-gray-900 dark:text-white text-xl">Formulir Pengajuan</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Batas pengajuan maks. 2 jam sebelum latihan.</p>
                 </div>
-                <button type="button" wire:click="toggleForm(false)" class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-full transition-colors focus:outline-none">
+                <button type="button" wire:click="toggleForm(false)" class="w-8 h-8 flex items-center justify-center rounded-full text-red-500 bg-red-50 hover:bg-red-100 transition-colors focus:outline-none">
                     <span class="material-symbols-outlined text-[20px]">close</span>
                 </button>
             </div>
@@ -75,7 +83,43 @@
                         <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Tanggal Berhalangan</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">calendar_today</span>
-                            <input type="date" required wire:model.live="tanggal" class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 focus:border-brand-blue transition-all">
+                            <input type="date" required wire:model.live="tanggal" min="{{ now()->toDateString() }}" placeholder="Pilih tanggal..."
+                                x-data="{
+                                    picker: null,
+                                    init() {
+                                        const hariLatihan = @js($hariLatihan);
+                                        const tanggalLibur = @js($tanggalLibur);
+
+                                        this.picker = flatpickr(this.$el, {
+                                            minDate: 'today',
+                                            dateFormat: 'Y-m-d',
+                                            altInput: true,
+                                            altFormat: 'd/m/Y',
+                                            disableMobile: true,
+                                            onReady: (selectedDates, dateStr, instance) => {
+                                                if (instance.altInput) {
+                                                    instance.altInput.placeholder = 'Pilih tanggal...';
+                                                }
+                                            },
+                                            disable: [
+                                                (date) => {
+                                                    const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date.getDay()];
+                                                    const iso = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+
+                                                    return !hariLatihan.includes(hari) || tanggalLibur.includes(iso);
+                                                },
+                                            ],
+                                            onChange: (selectedDates, dateStr) => {
+                                                this.$el.value = dateStr;
+                                                this.$el.dispatchEvent(new Event('input', { bubbles: true }));
+                                            },
+                                        });
+                                    },
+                                    destroy() {
+                                        this.picker?.destroy();
+                                    },
+                                }"
+                                class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-4 focus:ring-brand-light dark:focus:ring-brand-blue/20 focus:border-brand-blue transition-all">
                         </div>
                         @if ($jadwalInfo)
                             <p class="text-xs font-medium text-brand-blue dark:text-brand-light mt-1.5">{{ $jadwalInfo }}</p>
@@ -117,7 +161,12 @@
                     <div>
                         <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Lampiran Bukti (Opsional)</label>
                         <div class="w-full bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 border-dashed rounded-2xl p-5 text-center cursor-pointer hover:bg-brand-light/50 dark:hover:bg-gray-800 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-colors flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
-                            <input type="file" wire:model="bukti" accept="image/*,.pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <input type="file" wire:model="bukti" wire:key="bukti-input-{{ $bukti ? 'terisi' : 'kosong' }}" accept="image/*,.pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            @if ($bukti)
+                                <button type="button" wire:click.stop="hapusBukti" title="Hapus lampiran" class="absolute top-2 right-2 z-30 w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 dark:bg-red-900/40 dark:hover:bg-red-900/60 text-red-500 dark:text-red-400 flex items-center justify-center transition-colors shadow-sm">
+                                    <span class="material-symbols-outlined text-[18px]">close</span>
+                                </button>
+                            @endif
                             <div class="w-12 h-12 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-400 flex items-center justify-center mb-1 group-hover:bg-white dark:group-hover:bg-gray-700 group-hover:text-brand-blue transition-colors shadow-sm">
                                 <span class="material-symbols-outlined text-[24px]">cloud_upload</span>
                             </div>

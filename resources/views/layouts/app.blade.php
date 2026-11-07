@@ -21,6 +21,7 @@
     <link rel="icon" href="{{ $faviconPath ?: asset('favicon.ico') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
     @livewireStyles
 
     <script>

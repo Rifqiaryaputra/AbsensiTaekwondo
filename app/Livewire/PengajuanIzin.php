@@ -2,7 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Models\HariLibur;
 use App\Models\IzinSakit;
+use App\Models\Jadwal;
 use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
@@ -30,6 +32,15 @@ class PengajuanIzin extends Component
     public ?string $jadwalInfo = null;
 
     public ?string $batasInfo = null;
+
+    protected array $messages = [
+        'tanggal.after_or_equal' => 'Tanggal pengajuan tidak boleh hari yang sudah berlalu.',
+        'bukti.max' => 'Ukuran file lampiran tidak boleh lebih dari 2MB.',
+        'bukti.image' => 'File lampiran harus berupa gambar.',
+        'bukti.mimes' => 'Format file harus berupa gambar (jpeg, png, jpg) atau PDF.',
+        'bukti.file' => 'File lampiran gagal diunggah.',
+        'bukti.uploaded' => 'File lampiran gagal diunggah. Pastikan ukuran tidak melebihi 2MB.',
+    ];
 
     public function updatedTanggal(JadwalService $service): void
     {
@@ -67,7 +78,7 @@ class PengajuanIzin extends Component
         }
 
         $this->validate([
-            'tanggal' => ['required', 'date'],
+            'tanggal' => ['required', 'date', 'after_or_equal:today'],
             'jenis' => ['required', 'in:izin,sakit'],
             'keterangan' => ['required', 'string', 'max:1000'],
             'bukti' => ['nullable', 'file', 'mimes:png,jpg,jpeg,pdf', 'max:2048'],
@@ -206,6 +217,12 @@ class PengajuanIzin extends Component
             ->orderByDesc('diajukan_pada');
     }
 
+    public function hapusBukti(): void
+    {
+        $this->bukti = null;
+        $this->resetValidation('bukti');
+    }
+
     private function resetForm(): void
     {
         $this->tanggal = '';
@@ -216,10 +233,39 @@ class PengajuanIzin extends Component
         $this->batasInfo = null;
     }
 
+    /**
+     * Hari yang memiliki jadwal latihan, dipakai untuk menonaktifkan tanggal lain di kalender.
+     */
+    private function hariLatihan(): array
+    {
+        return Jadwal::query()
+            ->pluck('hari')
+            ->map(fn ($hari) => trim((string) $hari))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Daftar tanggal libur (Y-m-d), dipakai Flatpickr sebagai tanggal nonaktif.
+     */
+    private function tanggalLibur(): array
+    {
+        return HariLibur::query()
+            ->pluck('tanggal')
+            ->map(fn ($tanggal) => Carbon::parse($tanggal)->toDateString())
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function render()
     {
         return view('livewire.pengajuan-izin', [
             'pengajuan' => $this->pengajuanQuery()->paginate($this->perPage),
+            'hariLatihan' => $this->hariLatihan(),
+            'tanggalLibur' => $this->tanggalLibur(),
         ]);
     }
 }
