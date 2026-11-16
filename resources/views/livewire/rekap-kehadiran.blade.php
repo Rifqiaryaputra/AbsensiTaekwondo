@@ -212,7 +212,7 @@
     @if ($showModalKoreksi)
     <!-- Koreksi Absensi Massal Modal -->
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 dark:bg-black/70 backdrop-blur-sm" wire:click.self="$set('showModalKoreksi', false)">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-3xl mx-auto max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" style="max-width: 48rem; width: 100%;">
             <!-- Header Modal -->
             <div class="flex items-start justify-between p-5 border-b border-gray-100 dark:border-gray-700">
                 <div>
@@ -243,17 +243,15 @@
                             <!-- Custom Radio Group (Pill Style) -->
                             <div class="flex p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full w-fit max-w-full overflow-x-auto">
                                 @foreach (['Hadir', 'Izin', 'Sakit', 'Alfa'] as $status)
-                                    @php
-                                        $warnaStatus = [
-                                            'Hadir' => 'peer-checked:bg-green-500',
-                                            'Izin' => 'peer-checked:bg-blue-500',
-                                            'Sakit' => 'peer-checked:bg-yellow-500',
-                                            'Alfa' => 'peer-checked:bg-red-500',
-                                        ][$status] ?? 'peer-checked:bg-gray-500';
-                                    @endphp
                                     <label class="cursor-pointer">
                                         <input type="radio" wire:model="dataKoreksi.{{ $anggota->id }}" value="{{ $status }}" class="peer sr-only" @checked(($dataKoreksi[$anggota->id] ?? 'Alfa') === $status)>
-                                        <div class="px-4 py-1.5 text-sm font-medium rounded-full transition-colors {{ $warnaStatus }} peer-checked:text-white text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+                                        <div @class([
+                                            'px-4 py-1.5 text-sm font-medium rounded-full transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap',
+                                            'peer-checked:bg-green-500 peer-checked:text-white' => $status === 'Hadir',
+                                            'peer-checked:bg-blue-500 peer-checked:text-white' => $status === 'Izin',
+                                            'peer-checked:bg-yellow-500 peer-checked:text-white' => $status === 'Sakit',
+                                            'peer-checked:bg-red-500 peer-checked:text-white' => $status === 'Alfa',
+                                        ])>
                                             {{ $status }}
                                         </div>
                                     </label>
