@@ -6,8 +6,12 @@ use App\Exports\RekapKehadiranExport;
 use App\Models\Absensi;
 use App\Models\Anggota;
 use App\Models\PengaturanProfil;
+use App\Models\User;
+use App\Services\JadwalService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,6 +33,16 @@ class RekapKehadiran extends Component
     public ?Anggota $selectedAnggota = null;
 
     public array $memberAttendanceDetails = [];
+
+    public bool $showModalKoreksi = false;
+
+    public ?string $tanggalKoreksi = null;
+
+    /** @var array<int|string, string> */
+    public array $dataKoreksi = [];
+
+    /** @var array<int, Anggota> */
+    public array $listAnggotaKoreksi = [];
 
     public function getEffectiveDates(): array
     {
@@ -75,7 +89,7 @@ class RekapKehadiran extends Component
     /**
      * Rekap agregat per anggota: total Hadir/Sakit/Izin/Alfa pada rentang tanggal.
      */
-    public function anggotaQuery(): \Illuminate\Database\Eloquent\Builder
+    public function anggotaQuery(): Builder
     {
         $searchTerms = collect(explode(',', $this->search))
             ->map(fn ($term) => strtolower(trim($term)))
@@ -131,6 +145,179 @@ class RekapKehadiran extends Component
         return Carbon::parse($date)->translatedFormat('d M Y');
     }
 
+    public function bukaModalKoreksi(): void
+    {
+        $this->authorizeKoreksi();
+
+        $this->tanggalKoreksi = $this->start !== '' ? $this->start : now()->toDateString();
+        $this->muatDataKoreksi();
+        $this->showModalKoreksi = true;
+    }
+
+    public function updatedTanggalKoreksi(): void
+    {
+        $this->validateOnly('tanggalKoreksi', [
+            'tanggalKoreksi' => ['required', 'date'],
+        ]);
+
+        $this->muatDataKoreksi();
+    }
+
+    protected function muatDataKoreksi(): void
+    {
+        $tanggal = Carbon::parse($this->tanggalKoreksi)->toDateString();
+
+        $this->listAnggotaKoreksi = Anggota::query()
+            ->where('status_anggota', Anggota::STATUS_AKTIF)
+            ->orderBy('nim', 'asc')
+            ->get()
+            ->all();
+
+        $statusByAnggota = Absensi::query()
+            ->whereDate('tanggal', $tanggal)
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->get(['anggota_id', 'status'])
+            ->unique('anggota_id')
+            ->pluck('status', 'anggota_id');
+
+        $this->dataKoreksi = collect($this->listAnggotaKoreksi)
+            ->mapWithKeys(function (Anggota $anggota) use ($statusByAnggota) {
+                $status = $statusByAnggota->get($anggota->id);
+
+                return [
+                    $anggota->id => $status ? ucfirst(strtolower($status)) : 'Alfa',
+                ];
+            })
+            ->all();
+    }
+
+    public function simpanKoreksi(): void
+    {
+        $this->authorizeKoreksi();
+
+        $this->validate([
+            'tanggalKoreksi' => ['required', 'date'],
+            'dataKoreksi' => ['present', 'array'],
+            'dataKoreksi.*' => ['required', 'in:Hadir,Izin,Sakit,Alfa'],
+        ]);
+
+        if ($this->dataKoreksi === []) {
+            $this->dispatch('toast', title: 'Tidak Ada Data', message: 'Belum ada anggota aktif yang dapat dikoreksi.', type: 'warning');
+
+            return;
+        }
+
+        $tanggal = Carbon::parse($this->tanggalKoreksi)->toDateString();
+        $jadwal = app(JadwalService::class)->getJadwalUntukTanggal($tanggal);
+        $user = auth()->user();
+
+        $anggotaIds = Anggota::query()
+            ->where('status_anggota', Anggota::STATUS_AKTIF)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $existingByAnggota = Absensi::query()
+            ->whereDate('tanggal', $tanggal)
+            ->orderByDesc('id')
+            ->get()
+            ->keyBy('anggota_id');
+
+        $statusMap = [
+            'Hadir' => Absensi::STATUS_HADIR,
+            'Izin' => Absensi::STATUS_IZIN,
+            'Sakit' => Absensi::STATUS_SAKIT,
+            'Alfa' => Absensi::STATUS_ALFA,
+        ];
+
+        $disimpan = 0;
+        $dilewati = 0;
+
+        DB::transaction(function () use ($user, $tanggal, $jadwal, $anggotaIds, $existingByAnggota, $statusMap, &$disimpan, &$dilewati) {
+            foreach ($this->dataKoreksi as $anggotaId => $status) {
+                $anggotaId = (int) $anggotaId;
+
+                if (! in_array($anggotaId, $anggotaIds, true) || ! isset($statusMap[$status])) {
+                    continue;
+                }
+
+                $statusDb = $statusMap[$status];
+                $existing = $existingByAnggota->get($anggotaId);
+
+                if ($existing) {
+                    $existing->status = $statusDb;
+                    $existing->sumber = Absensi::SUMBER_MANUAL;
+                    $existing->petugas_id = $user->id;
+
+                    if (! in_array($statusDb, [Absensi::STATUS_IZIN, Absensi::STATUS_SAKIT], true)) {
+                        $existing->izin_sakit_id = null;
+                    }
+
+                    $existing->save();
+                    $disimpan++;
+
+                    continue;
+                }
+
+                // Tabel absensi mewajibkan jadwal_id. Tanpa jadwal pada tanggal
+                // tersebut, hanya data yang sudah ada yang bisa diperbarui.
+                if (! $jadwal) {
+                    $dilewati++;
+
+                    continue;
+                }
+
+                Absensi::create([
+                    'anggota_id' => $anggotaId,
+                    'jadwal_id' => $jadwal->id,
+                    'petugas_id' => $user->id,
+                    'tanggal' => $tanggal,
+                    'status' => $statusDb,
+                    'sumber' => Absensi::SUMBER_MANUAL,
+                    'waktu_scan' => $statusDb === Absensi::STATUS_HADIR ? now() : null,
+                ]);
+                $disimpan++;
+            }
+        });
+
+        $this->showModalKoreksi = false;
+        $this->dataKoreksi = [];
+        $this->listAnggotaKoreksi = [];
+
+        if ($disimpan === 0) {
+            $this->dispatch(
+                'toast',
+                title: 'Tidak Ada Perubahan',
+                message: $dilewati > 0
+                    ? 'Tidak ada jadwal latihan pada tanggal tersebut, sehingga data baru tidak dapat dibuat.'
+                    : 'Tidak ada data absensi yang dapat disimpan.',
+                type: 'warning'
+            );
+
+            return;
+        }
+
+        $message = "{$disimpan} data absensi berhasil disimpan.";
+
+        if ($dilewati > 0) {
+            $message .= " {$dilewati} anggota dilewati karena tidak ada jadwal pada tanggal tersebut.";
+        }
+
+        $this->dispatch('toast', title: 'Berhasil', message: $message, type: 'success');
+    }
+
+    private function authorizeKoreksi(): void
+    {
+        $user = auth()->user();
+
+        abort_if(
+            ! $user || ! in_array($user->role, [User::ROLE_ADMIN, User::ROLE_PETUGAS], true),
+            403,
+            'Akses ditolak.'
+        );
+    }
+
     public function exportExcel()
     {
         [$start, $end] = array_values($this->getEffectiveDates());
@@ -144,7 +331,7 @@ class RekapKehadiran extends Component
     public function exportPdf()
     {
         [$start, $end] = array_values($this->getEffectiveDates());
-        $anggota = $this->anggotaQuery()->orderBy('id_anggota')->get();
+        $anggota = $this->anggotaQuery()->orderBy('nim', 'asc')->get();
         $summary = $this->summary();
         $settings = PengaturanProfil::instance();
 
@@ -172,7 +359,7 @@ class RekapKehadiran extends Component
     public function render()
     {
         return view('livewire.rekap-kehadiran', [
-            'anggota' => $this->anggotaQuery()->orderBy('id_anggota')->paginate($this->perPage),
+            'anggota' => $this->anggotaQuery()->orderBy('nim', 'asc')->paginate($this->perPage),
             'summary' => $this->summary(),
             'dates' => $this->getEffectiveDates(),
         ]);

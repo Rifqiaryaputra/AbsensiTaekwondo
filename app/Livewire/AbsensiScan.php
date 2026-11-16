@@ -54,7 +54,7 @@ class AbsensiScan extends Component
 
     public function refreshJadwal(JadwalService $jadwalService): void
     {
-        $now = now();
+        $now = $jadwalService->waktuSekarang();
         $user = auth()->user();
         $holiday = HariLibur::query()->whereDate('tanggal', $now->toDateString())->first();
 
@@ -127,8 +127,10 @@ class AbsensiScan extends Component
 
         $jadwalHariIni = $jadwalService->getJadwalUntukTanggal($now);
         if ($jadwalHariIni) {
-            $this->jadwalHariIniInfo = "{$jadwalHariIni->hari} ({$jadwalHariIni->jam_start} - {$jadwalHariIni->jam_close} WIB)";
-            $this->jadwalHariIniStatus = $now->toTimeString() < $jadwalHariIni->jam_start ? 'belum dibuka' : 'sudah ditutup';
+            [$mulaiHariIni, $selesaiHariIni] = $jadwalService->rentangJam($jadwalHariIni, $now);
+
+            $this->jadwalHariIniInfo = "{$jadwalHariIni->hari} ({$mulaiHariIni->format('H:i')} - {$selesaiHariIni->format('H:i')} WIB)";
+            $this->jadwalHariIniStatus = $now->lessThan($mulaiHariIni) ? 'belum dibuka' : 'sudah ditutup';
             $this->sesiTanggal = $now->toDateString();
         } else {
             $this->jadwalHariIniInfo = null;
@@ -144,7 +146,7 @@ class AbsensiScan extends Component
         $this->records = Absensi::query()
             ->with('anggota')
             ->when($this->jadwalId, fn ($q) => $q->where('jadwal_id', $this->jadwalId))
-            ->whereDate('tanggal', $this->sesiTanggal ?? now()->toDateString())
+            ->whereDate('tanggal', $this->sesiTanggal ?? Carbon::now(JadwalService::TIMEZONE)->toDateString())
             ->orderByDesc('waktu_scan')
             ->orderByDesc('id')
             ->get();
@@ -175,8 +177,8 @@ class AbsensiScan extends Component
         }
 
         // KONDISI 2: Boleh edit jika sedang berada di jendela koreksi (besok harinya jam 12:00 - 13:00)
-        $now = now();
-        $jadwalDate = Carbon::parse($this->sesiTanggal);
+        $now = Carbon::now(JadwalService::TIMEZONE);
+        $jadwalDate = Carbon::parse($this->sesiTanggal, JadwalService::TIMEZONE);
         $nextDay = $jadwalDate->copy()->addDay()->startOfDay();
 
         $windowStart = $nextDay->copy()->setHour(12)->setMinute(0);
@@ -188,7 +190,7 @@ class AbsensiScan extends Component
     public function processManualInput(AbsensiService $service): void
     {
         if (! $this->isAuthorized) {
-            $this->dispatch('toast', title: 'Akses Ditolak', message: 'Anda tidak memiliki jadwal tugas absen pada saat ini.', type: 'error');
+            $this->dispatch('toast', title: 'Akses Ditolak', message: $this->pesanAksesDitolak(), type: 'error');
             return;
         }
 
@@ -225,7 +227,7 @@ class AbsensiScan extends Component
     public function processScanInput(string $idAnggota, AbsensiService $service): void
     {
         if (! $this->isAuthorized) {
-            $this->dispatch('toast', title: 'Akses Ditolak', message: 'Anda tidak memiliki jadwal tugas absen pada saat ini.', type: 'error');
+            $this->dispatch('toast', title: 'Akses Ditolak', message: $this->pesanAksesDitolak(), type: 'error');
             return;
         }
 
@@ -282,6 +284,18 @@ class AbsensiScan extends Component
     public function countStatus(string $status): int
     {
         return $this->records->where('status', $status)->count();
+    }
+
+    private function pesanAksesDitolak(): string
+    {
+        $service = app(JadwalService::class);
+        $sekarang = Carbon::now(JadwalService::TIMEZONE);
+
+        if (! $service->getActiveJadwal($sekarang)) {
+            return $service->pesanDiLuarJam($sekarang);
+        }
+
+        return 'Anda tidak memiliki jadwal tugas absen pada saat ini.';
     }
 
     private function dispatchToast(array $result): void

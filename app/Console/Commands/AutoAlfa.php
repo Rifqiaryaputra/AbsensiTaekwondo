@@ -7,7 +7,6 @@ use App\Models\Anggota;
 use App\Models\IzinSakit;
 use App\Services\JadwalService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 
 class AutoAlfa extends Command
 {
@@ -17,7 +16,7 @@ class AutoAlfa extends Command
 
     public function handle(JadwalService $jadwalService): int
     {
-        $now = Carbon::now();
+        $now = $jadwalService->waktuSekarang();
 
         if ($jadwalService->isHariLibur($now)) {
             $this->info('Hari ini merupakan hari libur, auto-alfa dilewati.');

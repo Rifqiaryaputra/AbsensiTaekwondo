@@ -6,6 +6,11 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Filter dan unduh data absensi anggota untuk laporan periodik</p>
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+            <button type="button" wire:click="bukaModalKoreksi"
+                class="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20">
+                <span class="material-symbols-outlined text-[20px]">edit_calendar</span>
+                Koreksi Per Hari
+            </button>
             <button type="button" wire:click="exportExcel"
                 class="flex items-center justify-center gap-2 px-5 py-3 md:py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl md:rounded-full font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-brand-blue dark:hover:text-brand-light hover:border-brand-blue/30 transition-colors shadow-sm">
                 <span class="material-symbols-outlined text-[20px]">download</span>
@@ -199,6 +204,83 @@
                         </div>
                     @endforelse
                 @endif
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if ($showModalKoreksi)
+    <!-- Koreksi Absensi Massal Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 dark:bg-black/70 backdrop-blur-sm" wire:click.self="$set('showModalKoreksi', false)">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700">
+            <!-- Header Modal -->
+            <div class="flex items-start justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Koreksi Absensi Massal</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Ubah status kehadiran semua anggota pada tanggal yang dipilih.</p>
+                    <input type="date" wire:model.live="tanggalKoreksi" class="mt-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:border-indigo-500 focus:ring-indigo-500">
+                    @error('tanggalKoreksi')
+                        <p class="text-xs text-red-500 dark:text-red-400 font-semibold mt-1.5">{{ $message }}</p>
+                    @enderror
+                </div>
+                <button type="button" wire:click="$set('showModalKoreksi', false)" class="w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body Modal (Scrollable) -->
+            <div class="p-5 overflow-y-auto flex-1 bg-gray-50/50 dark:bg-gray-800/50">
+                <div class="space-y-3">
+                    @forelse ($listAnggotaKoreksi as $anggota)
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm gap-4">
+                            <div class="min-w-0">
+                                <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $anggota->nama_lengkap }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $anggota->nim }}</p>
+                            </div>
+
+                            <!-- Custom Radio Group (Pill Style) -->
+                            <div class="flex p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full w-fit max-w-full overflow-x-auto">
+                                @foreach (['Hadir', 'Izin', 'Sakit', 'Alfa'] as $status)
+                                    @php
+                                        $warnaStatus = [
+                                            'Hadir' => 'peer-checked:bg-green-500',
+                                            'Izin' => 'peer-checked:bg-blue-500',
+                                            'Sakit' => 'peer-checked:bg-yellow-500',
+                                            'Alfa' => 'peer-checked:bg-red-500',
+                                        ][$status] ?? 'peer-checked:bg-gray-500';
+                                    @endphp
+                                    <label class="cursor-pointer">
+                                        <input type="radio" wire:model="dataKoreksi.{{ $anggota->id }}" value="{{ $status }}" class="peer sr-only" @checked(($dataKoreksi[$anggota->id] ?? 'Alfa') === $status)>
+                                        <div class="px-4 py-1.5 text-sm font-medium rounded-full transition-colors {{ $warnaStatus }} peer-checked:text-white text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+                                            {{ $status }}
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-12 flex flex-col items-center justify-center text-center">
+                            <span class="material-symbols-outlined text-[48px] text-gray-300 dark:text-gray-600 mb-3">group_off</span>
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Belum ada anggota aktif</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tambahkan anggota terlebih dahulu sebelum melakukan koreksi massal.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="p-5 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 bg-white dark:bg-gray-800">
+                <button type="button" wire:click="$set('showModalKoreksi', false)" class="px-5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Batal
+                </button>
+                <button type="button" wire:click="simpanKoreksi" wire:loading.attr="disabled" wire:target="simpanKoreksi" class="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                    <span wire:loading.remove wire:target="simpanKoreksi" class="material-symbols-outlined text-[18px]">save</span>
+                    <span wire:loading wire:target="simpanKoreksi" class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                    <span wire:loading.remove wire:target="simpanKoreksi">Simpan Perubahan</span>
+                    <span wire:loading wire:target="simpanKoreksi">Menyimpan...</span>
+                </button>
             </div>
         </div>
     </div>

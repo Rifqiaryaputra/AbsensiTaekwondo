@@ -21,17 +21,18 @@ class AbsensiService
      *
      * @return array{ok: bool, message: string, absensi: ?Absensi}
      */
-    public function catatKehadiran(Anggota $anggota, string $sumber, ?int $petugasId, Carbon $now = null): array
+    public function catatKehadiran(Anggota $anggota, string $sumber, ?int $petugasId, ?Carbon $now = null): array
     {
-        $now ??= Carbon::now();
-        $jadwal = $this->jadwalService->getActiveJadwal($now);
-
-        if (! $jadwal) {
-            return ['ok' => false, 'message' => 'Tidak ada jadwal latihan yang aktif saat ini. Absen hanya dibuka pada jam jadwal berlangsung.', 'absensi' => null];
-        }
+        $now = $this->jadwalService->waktuSekarang($now);
 
         if ($this->jadwalService->isHariLibur($now)) {
             return ['ok' => false, 'message' => 'Hari ini merupakan hari libur, absensi tidak dibuka.', 'absensi' => null];
+        }
+
+        $jadwal = $this->jadwalService->getActiveJadwal($now);
+
+        if (! $jadwal) {
+            return ['ok' => false, 'message' => $this->jadwalService->pesanDiLuarJam($now), 'absensi' => null];
         }
 
         $existing = Absensi::query()

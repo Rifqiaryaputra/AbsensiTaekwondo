@@ -28,7 +28,7 @@ class AbsensiController extends Controller
             return back()->with('error', 'Sesi absensi jadwal ini sudah ditutup.');
         }
 
-        if ($jadwalService->isHariLibur(now())) {
+        if ($jadwalService->isHariLibur($jadwalService->waktuSekarang())) {
             return back()->with('error', 'Hari ini merupakan hari libur, sesi absensi tidak dapat ditutup.');
         }
 

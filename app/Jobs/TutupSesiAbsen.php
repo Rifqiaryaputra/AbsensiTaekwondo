@@ -12,7 +12,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Carbon;
 
 class TutupSesiAbsen implements ShouldQueue
 {
@@ -28,7 +27,8 @@ class TutupSesiAbsen implements ShouldQueue
 
     public function handle(JadwalService $jadwalService): void
     {
-        $today = Carbon::now()->toDateString();
+        $now = $jadwalService->waktuSekarang();
+        $today = $now->toDateString();
 
         $jadwal = Jadwal::find($this->jadwalId);
 
@@ -36,7 +36,7 @@ class TutupSesiAbsen implements ShouldQueue
             return;
         }
 
-        if ($jadwalService->isHariLibur(Carbon::now())) {
+        if ($jadwalService->isHariLibur($now)) {
             return;
         }
 
@@ -51,8 +51,6 @@ class TutupSesiAbsen implements ShouldQueue
                     ->where('status', IzinSakit::STATUS_DISETUJUI);
             })
             ->pluck('id');
-
-        $now = Carbon::now();
 
         foreach ($anggotaIdTanpaKehadiran->chunk(200) as $chunk) {
             $records = $chunk->map(fn ($anggotaId) => [
