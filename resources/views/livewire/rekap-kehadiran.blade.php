@@ -7,7 +7,7 @@
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
             <button type="button" wire:click="bukaModalKoreksi"
-                class="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20">
+                class="flex items-center justify-center gap-2 px-5 py-3 md:py-2.5 bg-brand-blue text-white rounded-xl md:rounded-full font-semibold text-sm hover:bg-brand-hover shadow-lg shadow-brand-blue/30 transition-colors">
                 <span class="material-symbols-outlined text-[20px]">edit_calendar</span>
                 Koreksi Per Hari
             </button>
@@ -275,7 +275,7 @@
                 <button type="button" wire:click="$set('showModalKoreksi', false)" class="px-5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Batal
                 </button>
-                <button type="button" wire:click="simpanKoreksi" wire:loading.attr="disabled" wire:target="simpanKoreksi" class="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                <button type="button" wire:click="simpanKoreksi" wire:loading.attr="disabled" wire:target="simpanKoreksi" class="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-brand-blue rounded-full hover:bg-brand-hover shadow-lg shadow-brand-blue/30 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
                     <span wire:loading.remove wire:target="simpanKoreksi" class="material-symbols-outlined text-[18px]">save</span>
                     <span wire:loading wire:target="simpanKoreksi" class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                     <span wire:loading.remove wire:target="simpanKoreksi">Simpan Perubahan</span>
