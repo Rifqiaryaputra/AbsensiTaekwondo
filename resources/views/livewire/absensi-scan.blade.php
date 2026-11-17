@@ -201,7 +201,7 @@
 
     @if ($this->canEditAbsensi())
     <!-- Edit Status Modal -->
-    <div id="editStatusModal" class="modal-overlay fixed inset-0 z-[60] flex items-center justify-center px-4">
+    <div id="editStatusModal" wire:ignore.self class="modal-overlay fixed inset-0 z-[60] flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-gray-900/40 dark:bg-gray-900/70 backdrop-blur-sm transition-opacity" onclick="closeModal('editStatusModal')"></div>
         <div class="modal-content relative bg-white dark:bg-gray-800 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
             <div class="px-6 py-5 flex items-center justify-between border-b border-gray-50 dark:border-gray-700/50">
@@ -301,6 +301,50 @@
                 Livewire.dispatch('changeStatus', { absensiId: absensiId, status: status });
                 closeModal('editStatusModal');
             };
+
+            // --- Sinkronisasi scroll lock dengan state modal Edit Status ---
+            // Modal bisa tertutup otomatis oleh Livewire (polling jadwal / sesi berakhir)
+            // tanpa user menekan tombol close, jadi kunci scroll harus selalu dilepas.
+            window.forceCloseEditStatusModal = function () {
+                const modal = document.getElementById('editStatusModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+
+                if (typeof window.unlockPageScroll === 'function') {
+                    window.unlockPageScroll();
+                } else {
+                    document.body.classList.remove('overflow-hidden');
+                    document.documentElement.classList.remove('overflow-hidden');
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                }
+            };
+
+            // Event dari Livewire: $this->dispatch('modal-closed')
+            window.addEventListener('modal-closed', window.forceCloseEditStatusModal);
+
+            // Fallback reaktif: modal/overlay hilang atau tidak aktif setelah DOM dimorph Livewire.
+            if (typeof MutationObserver !== 'undefined') {
+                const editModalObserver = new MutationObserver(function () {
+                    const modal = document.getElementById('editStatusModal');
+                    if (!modal || !modal.classList.contains('active')) {
+                        window.forceCloseEditStatusModal();
+                    }
+                });
+                editModalObserver.observe(document.body, { childList: true, subtree: true });
+            }
+
+            document.addEventListener('livewire:init', function () {
+                if (!window.Livewire) return;
+
+                Livewire.hook('morphed', function () {
+                    const modal = document.getElementById('editStatusModal');
+                    if (!modal || !modal.classList.contains('active')) {
+                        window.forceCloseEditStatusModal();
+                    }
+                });
+            });
         </script>
     @endpush
 </div>

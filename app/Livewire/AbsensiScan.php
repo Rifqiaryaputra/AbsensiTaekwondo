@@ -72,6 +72,7 @@ class AbsensiScan extends Component
             $this->sesiMode = null;
             $this->isAuthorized = $user?->canManageJadwal(null) ?? false;
             $this->records = new Collection;
+            $this->syncEditStatusModal();
 
             return;
         }
@@ -94,6 +95,7 @@ class AbsensiScan extends Component
             $this->isAuthorized = $user?->canManageJadwal($jadwal) ?? false;
 
             $this->loadRecords();
+            $this->syncEditStatusModal();
 
             return;
         }
@@ -112,6 +114,7 @@ class AbsensiScan extends Component
                 $this->isAuthorized = $user?->canManageJadwal($jadwalKemarin) ?? false;
 
                 $this->loadRecords();
+                $this->syncEditStatusModal();
 
                 return;
             }
@@ -120,6 +123,7 @@ class AbsensiScan extends Component
                 $this->sesiMode = 'terkunci';
                 $this->isAuthorized = $user?->canManageJadwal($jadwalKemarin) ?? false;
                 $this->loadRecords();
+                $this->syncEditStatusModal();
 
                 return;
             }
@@ -139,6 +143,18 @@ class AbsensiScan extends Component
 
         $this->isAuthorized = $user?->canManageJadwal($jadwalHariIni) ?? false;
         $this->loadRecords();
+        $this->syncEditStatusModal();
+    }
+
+    /**
+     * Tutup paksa modal "Edit Status Kehadiran" bila sesi tidak lagi boleh diedit.
+     * Browser event dipakai agar body scroll lock ikut dilepas (lihat absensi-scan.blade.php).
+     */
+    private function syncEditStatusModal(): void
+    {
+        if (! $this->canEditAbsensi()) {
+            $this->dispatch('modal-closed');
+        }
     }
 
     public function loadRecords(): void
@@ -278,6 +294,7 @@ class AbsensiScan extends Component
 
         $service->perbaruiStatus($absensi, $status, auth()->id());
         $this->dispatch('toast', title: 'Status Diperbarui', message: 'Status kehadiran berhasil diubah.', type: 'success');
+        $this->dispatch('modal-closed');
         $this->loadRecords();
     }
 

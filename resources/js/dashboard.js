@@ -46,12 +46,23 @@ window.updateDarkModeUI = function (isDark) {
     if (desktopText) desktopText.textContent = isDark ? 'Light Mode' : 'Dark Mode';
 };
 
+// Lepas semua scroll lock halaman (dipakai saat modal ditutup manual maupun otomatis)
+window.unlockPageScroll = function () {
+    document.body.classList.remove('overflow-hidden');
+    document.documentElement.classList.remove('overflow-hidden');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+};
+
 // Generic modal open/close (.modal-overlay + .active pattern)
 window.openModal = function (id) {
     const el = document.getElementById(id);
     if (el) {
         el.classList.add('active');
+        document.body.classList.add('overflow-hidden');
+        document.documentElement.classList.add('overflow-hidden');
         document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
     }
 };
 
@@ -59,7 +70,11 @@ window.closeModal = function (id) {
     const el = document.getElementById(id);
     if (el) {
         el.classList.remove('active');
-        document.body.style.overflow = '';
+    }
+
+    // Jangan buka scroll bila masih ada modal lain yang aktif.
+    if (!document.querySelector('.modal-overlay.active')) {
+        unlockPageScroll();
     }
 };
 
