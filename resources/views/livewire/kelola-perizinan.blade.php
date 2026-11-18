@@ -75,7 +75,11 @@
                                         <div class="text-xs text-gray-600 dark:text-gray-400 font-medium max-w-[220px] line-clamp-2 break-words" title="{{ $item->keterangan }}"><span class="font-semibold text-gray-800 dark:text-gray-200">Alasan:</span> {{ $item->keterangan }}</div>
                                     @endif
                                     @if ($item->bukti_lampiran)
-                                        <a href="{{ asset($item->bukti_lampiran) }}" target="_blank" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors group/btn w-fit">
+                                        @php
+                                            $buktiPath = ltrim(str_replace('\\', '/', $item->bukti_lampiran), '/');
+                                            $buktiPath = preg_replace('#^storage/#i', '', $buktiPath);
+                                        @endphp
+                                        <a href="{{ asset('storage/'.$buktiPath) }}" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors group/btn w-fit">
                                             <span class="material-symbols-outlined text-[18px] text-blue-500">attach_file</span>
                                             <span class="text-xs font-semibold text-gray-600 dark:text-gray-300 group-hover/btn:text-brand-blue dark:group-hover/btn:text-white truncate max-w-[180px]">Lihat Bukti</span>
                                         </a>

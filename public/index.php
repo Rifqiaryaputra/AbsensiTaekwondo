@@ -17,4 +17,10 @@ require __DIR__.'/../vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
+// Shared hosting: saat index.php ditempatkan di document root terpisah
+// (mis. public_html), public_path() harus menunjuk ke direktori ini.
+// Jika core Laravel berada di luar document root, sesuaikan juga path
+// require autoload/bootstrap di atas ke lokasi core aplikasi.
+$app->usePublicPath(__DIR__);
+
 $app->handleRequest(Request::capture());

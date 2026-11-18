@@ -10,6 +10,9 @@ use App\Models\User;
 use App\Services\JadwalService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\Concerns\SeedsFakultasProdi;
 use Tests\TestCase;
@@ -285,5 +288,65 @@ class PerizinanFlowTest extends TestCase
             ->call('save');
 
         $this->assertDatabaseCount('izin_sakit', 0);
+    }
+
+    public function test_bukti_izin_is_stored_on_public_disk(): void
+    {
+        Storage::fake('public');
+
+        $anggota = $this->anggota();
+        $this->actingAsAnggota($anggota);
+
+        $now = Carbon::now();
+        Jadwal::create([
+            'hari' => $this->hariNama($now),
+            'jam_start' => $now->copy()->addHours(3)->format('H:i:s'),
+            'jam_close' => $now->copy()->addHours(5)->format('H:i:s'),
+        ]);
+
+        Livewire::test(PengajuanIzin::class)
+            ->set('tanggal', $now->toDateString())
+            ->set('jenis', 'izin')
+            ->set('keterangan', 'Ada acara keluarga')
+            ->set('bukti', UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'))
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $izin = IzinSakit::firstOrFail();
+
+        $this->assertNotNull($izin->bukti_lampiran);
+        $this->assertStringStartsWith('bukti-izin/', $izin->bukti_lampiran);
+        Storage::disk('public')->assertExists($izin->bukti_lampiran);
+    }
+
+    public function test_bukti_izin_route_serves_file_from_public_disk(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('bukti-izin/bukti.pdf', '%PDF-1.4 contoh');
+
+        $this->get('/bukti-izin/bukti.pdf')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->get('/storage/bukti-izin/bukti.pdf')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_bukti_izin_route_serves_legacy_file_from_public_folder(): void
+    {
+        $filename = 'legacy-bukti-'.now()->timestamp.'-'.mt_rand(1000, 9999).'.pdf';
+        $path = public_path('bukti-izin/'.$filename);
+
+        File::ensureDirectoryExists(dirname($path));
+        File::put($path, '%PDF-1.4 contoh lama');
+
+        try {
+            $this->get('/bukti-izin/'.$filename)
+                ->assertOk()
+                ->assertHeader('content-type', 'application/pdf');
+        } finally {
+            File::delete($path);
+        }
     }
 }

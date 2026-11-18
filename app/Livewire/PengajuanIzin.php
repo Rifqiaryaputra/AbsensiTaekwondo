@@ -7,7 +7,8 @@ use App\Models\IzinSakit;
 use App\Models\Jadwal;
 use App\Services\JadwalService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -131,7 +132,7 @@ class PengajuanIzin extends Component
             return;
         }
 
-                // DUPLIKAT: maksimal 1 pengajuan aktif per anggota per jadwal.
+        // DUPLIKAT: maksimal 1 pengajuan aktif per anggota per jadwal.
         $sudahMengajukan = IzinSakit::query()
             ->where('anggota_id', $anggota->id)
             ->where('jadwal_id', $jadwal->id)
@@ -146,11 +147,21 @@ class PengajuanIzin extends Component
 
         $buktiPath = null;
         if ($this->bukti) {
-            $dir = public_path('bukti-izin');
-            File::ensureDirectoryExists($dir);
-            $name = $anggota->id.'_'.now()->timestamp.'.'.($this->bukti->getClientOriginalExtension() ?: 'jpg');
-            File::copy($this->bukti->getRealPath(), $dir.DIRECTORY_SEPARATOR.$name);
-            $buktiPath = 'bukti-izin/'.$name;
+            $extension = strtolower((string) ($this->bukti->guessExtension() ?: $this->bukti->getClientOriginalExtension() ?: 'jpg'));
+
+            if (! in_array($extension, ['pdf', 'png', 'jpg', 'jpeg'], true)) {
+                $extension = 'jpg';
+            }
+
+            $name = $anggota->id.'_'.now()->timestamp.'_'.Str::lower(Str::random(8)).'.'.$extension;
+            $buktiPath = Storage::disk('public')->putFileAs('bukti-izin', $this->bukti, $name);
+
+            if (! $buktiPath) {
+                $this->addError('bukti', 'File lampiran gagal disimpan. Silakan coba lagi.');
+                $this->dispatch('toast', title: 'Gagal', message: 'File lampiran gagal disimpan.', type: 'error');
+
+                return;
+            }
         }
 
         IzinSakit::create([

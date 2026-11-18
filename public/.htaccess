@@ -17,6 +17,10 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Bukti izin selalu ditangani Laravel agar fallback tetap bekerja
+    # meskipun symlink public/storage atau folder public/bukti-izin tidak ada.
+    RewriteRule ^(?:storage/)?bukti-izin/[^/]+$ index.php [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

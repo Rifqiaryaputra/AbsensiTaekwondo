@@ -3,6 +3,7 @@
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\AnggotaDashboardController;
+use App\Http\Controllers\BuktiIzinController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HariLiburController;
 use App\Http\Controllers\JadwalController;
@@ -18,6 +19,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+// Fallback penyajian bukti izin untuk shared hosting tanpa symlink public/storage.
+Route::get('/bukti-izin/{filename}', [BuktiIzinController::class, 'show'])
+    ->where('filename', '[^/]+')
+    ->name('bukti-izin.show');
+
+Route::get('/storage/bukti-izin/{filename}', [BuktiIzinController::class, 'show'])
+    ->where('filename', '[^/]+')
+    ->name('storage.bukti-izin.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Admin & Petugas
